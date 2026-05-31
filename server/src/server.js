@@ -1,6 +1,14 @@
-import express from "express"
-const app = express.json()
+const dotenv = require("dotenv");
 
-app.get("/", (req, res) => {
-    res.send("Fitness API is working...");
-})
+dotenv.config();
+
+const app = require("./app");
+const connectDB = require("./config/db");
+
+connectDB();
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
