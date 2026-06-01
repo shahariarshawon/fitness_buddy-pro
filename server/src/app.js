@@ -3,6 +3,8 @@ const cors = require("cors");
 
 const authRoutes = require("./routes/authRoutes");
 const workoutRoutes = require("./routes/workoutRoutes");
+const mealRoutes = require("./routes/mealRoutes");
+
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -38,6 +40,8 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 // workout routes
 app.use("/api/workouts", workoutRoutes);
+// meal routes
+app.use("/api/meals", mealRoutes);
 
 // Error middleware
 app.use(notFound);
