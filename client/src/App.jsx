@@ -14,6 +14,7 @@ import Habits from "./pages/Habits";
 import Progress from "./pages/Progress";
 import Photos from "./pages/Photos";
 import Reports from "./pages/Reports";
+import Reminders from "./pages/Reminders";
 
 const App = () => {
   return (
@@ -38,6 +39,7 @@ const App = () => {
         <Route path="/progress" element={<Progress />} />
         <Route path="/photos" element={<Photos />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/reminders" element={<Reminders />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
