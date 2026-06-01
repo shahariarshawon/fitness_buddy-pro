@@ -8,6 +8,7 @@ const habitRoutes = require("./routes/habitRoutes");
 const progressRoutes = require("./routes/progressRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const userRoutes = require("./routes/userRoutes");
+const exerciseRoutes = require("./routes/exerciseRoutes");
 
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
@@ -54,6 +55,8 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 // user routes
 app.use("/api/users", userRoutes);
+// exercise routes
+app.use("/api/exercises", exerciseRoutes);
 
 // Error middleware
 app.use(notFound);
