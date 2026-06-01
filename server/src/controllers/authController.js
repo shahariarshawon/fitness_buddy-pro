@@ -94,9 +94,11 @@ const loginUser = async (req, res, next) => {
 // @access  Private
 const getMe = async (req, res, next) => {
   try {
+    const user = await User.findById(req.user._id).select("-password");
+
     res.status(200).json({
       success: true,
-      user: req.user,
+      user,
     });
   } catch (error) {
     next(error);
