@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { Dumbbell, Home, LogOut, User } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/useAuth"; 
 
 const DashboardLayout = () => {
   const { user, logout } = useAuth();
