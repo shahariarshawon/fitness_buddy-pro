@@ -25,27 +25,14 @@ https://fitnessbuddyproserver.vercel.app
 ### Dashboard
 <img width="1290" height="6273" alt="dashboard_fbp" src="https://github.com/user-attachments/assets/56329f81-c84e-48f0-b932-07cfb1204069" />
 
-
 ### Workout Tracker
 <img width="1290" height="5970" alt="fbp_workout" src="https://github.com/user-attachments/assets/9d65dde3-6cd2-4660-bd74-7af224811d24" />
 
 ### Meal & Diet Tracker
 <img width="1290" height="7524" alt="mealTracker_fbp" src="https://github.com/user-attachments/assets/8032c7b5-4ecf-452d-bb68-de7707b99d44" />
 
-### Habit Tracker
-<img width="1290" height="7791" alt="habitTracker_fbp" src="https://github.com/user-attachments/assets/20ebdb77-461e-4eb9-b1e6-c30308170b1b" />
-
 ### Body Prograss Tracker
 <img width="1290" height="7473" alt="bodyProgressTracker_fbp" src="https://github.com/user-attachments/assets/d80f29a3-535b-40bc-897f-cf320ccb3cf3" />
-
-### Body Progress Tracker
-<img width="1290" height="6102" alt="progressPhotoTracker_fbp" src="https://github.com/user-attachments/assets/3d6746d0-263e-4c81-b339-861b82de194d" />
-
-### Reminders
-<img width="1290" height="6243" alt="reminders_fbp" src="https://github.com/user-attachments/assets/8f3bac17-7fdd-4ae6-94a5-0b77adf1fe05" />
-
-### Profile
-<img width="1290" height="5925" alt="profile_fbp" src="https://github.com/user-attachments/assets/e59e0c18-a773-4cca-ac7a-d9b693cfb3f2" />
 
 ### Reports
 <img width="1290" height="9948" alt="reportsTracker_fbp" src="https://github.com/user-attachments/assets/a6878445-0c15-46ea-8d96-c18a7303438c" />
