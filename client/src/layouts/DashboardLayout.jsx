@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import {
   Activity,
+  BarChart3,
   Camera,
   CheckCircle,
   Dumbbell,
@@ -79,6 +80,15 @@ const DashboardLayout = () => {
             <Camera size={18} />
             Photos
           </Link>
+
+<Link
+  to="/reports"
+  className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-300 hover:bg-slate-800"
+>
+  <BarChart3 size={18} />
+  Reports
+</Link>
+
           <Link
             to="/profile"
             className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-300 hover:bg-slate-800"
