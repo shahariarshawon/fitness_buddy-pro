@@ -4,15 +4,26 @@ const {
   createFood,
   getFoods,
   getFoodById,
+  calculateFoodNutrition,
   updateFood,
   deleteFood,
+  getFoodFilters,
+  getFatLossFoodRecommendations,
 } = require("../controllers/foodController");
 
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.route("/").post(protect, createFood).get(protect, getFoods);
+router.get("/meta/filters", protect, getFoodFilters);
+router.get("/recommendations/fat-loss", protect, getFatLossFoodRecommendations);
+
+router
+  .route("/")
+  .post(protect, createFood)
+  .get(protect, getFoods);
+
+router.post("/:id/calculate", protect, calculateFoodNutrition);
 
 router
   .route("/:id")
