@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema(
 
     height: {
       type: Number,
-      default: null,
+      default: null, // cm
     },
 
     gender: {
@@ -46,9 +46,51 @@ const userSchema = new mongoose.Schema(
       default: "fat_loss",
     },
 
+    activityLevel: {
+      type: String,
+      enum: ["sedentary", "light", "moderate", "active", "very_active"],
+      default: "moderate",
+    },
+
+    startingWeight: {
+      type: Number,
+      default: null,
+    },
+
     targetWeight: {
       type: Number,
       default: null,
+    },
+
+    dailyCalorieTarget: {
+      type: Number,
+      default: 2000,
+    },
+
+    dailyProteinTarget: {
+      type: Number,
+      default: 120,
+    },
+
+    dailyWaterTarget: {
+      type: Number,
+      default: 3, // litres
+    },
+
+    sleepTarget: {
+      type: Number,
+      default: 8, // hours
+    },
+
+    unitSystem: {
+      type: String,
+      enum: ["metric", "imperial"],
+      default: "metric",
+    },
+
+    profileCompleted: {
+      type: Boolean,
+      default: false,
     },
   },
   {
