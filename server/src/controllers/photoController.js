@@ -5,7 +5,7 @@ const uploadToCloudinary = (fileBuffer) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
-        folder: "kynorafit/progress-photos",
+        folder: "FitnessBuddyPro/progress-photos",
         resource_type: "image",
         transformation: [
           {

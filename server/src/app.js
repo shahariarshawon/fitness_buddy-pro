@@ -24,38 +24,38 @@ const {
 
 const app = express();
 
-// Trust proxy for deployment platforms like Render
 app.set("trust proxy", 1);
 
-// Security headers
 app.use(helmet());
 
-// Development request logger
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-// CORS
 const allowedOrigins = [
-  process.env.CLIENT_URL,
+  "https://fitnessbuddypro.vercel.app",
   "http://localhost:5173",
   "http://localhost:3000",
-];
+  process.env.CLIENT_URL,
+].filter(Boolean);
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-// Body parsers
+    console.log("Blocked by CORS:", origin);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
+
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
@@ -66,7 +66,7 @@ app.use(generalLimiter);
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "KynoraFit API is running successfully",
+    message: "Fitness Buddy Pro API is running successfully",
   });
 });
 
