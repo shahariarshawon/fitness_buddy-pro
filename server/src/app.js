@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
+const authRoutes = require("./routes/authRoutes");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -20,18 +21,20 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "fitness buddy pro API is running successfully",
+    message: "Fitness Buddy Pro API is running successfully",
   });
 });
 
-// API test route
+// Health route
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
     message: "Backend health check passed",
-    timestamp: new Date().toISOString(),
   });
 });
+
+// Auth routes
+app.use("/api/auth", authRoutes);
 
 // Error middleware
 app.use(notFound);

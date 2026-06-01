@@ -23,11 +23,10 @@ const protect = async (req, res, next) => {
 
     if (!user) {
       res.status(401);
-      throw new Error("User not found");
+      throw new Error("Not authorized. User not found");
     }
 
     req.user = user;
-
     next();
   } catch (error) {
     res.status(401);
