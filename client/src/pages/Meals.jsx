@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Utensils } from "lucide-react";
 import api from "../services/api";
+import PageLoader from "../components/common/PageLoader";
 
 const initialFood = {
   name: "",
@@ -228,8 +229,13 @@ const Meals = () => {
   };
 
   if (loading) {
-    return <div className="text-slate-300">Loading meals...</div>;
-  }
+  return (
+    <PageLoader
+      title="Loading data"
+      message="Please wait while Fitness Buddy Pro prepares your page."
+    />
+  );
+}
 
   const formTotals = calculateFormTotals();
 

@@ -8,6 +8,7 @@ import {
   TrendingDown,
 } from "lucide-react";
 import api from "../services/api";
+import PageLoader from "../components/common/PageLoader";
 
 const getCurrentMonth = () => {
   const date = new Date();
@@ -112,8 +113,13 @@ const Reports = () => {
   };
 
   if (loading) {
-    return <div className="text-slate-300">Loading reports...</div>;
-  }
+  return (
+    <PageLoader
+      title="Loading data"
+      message="Please wait while Fitness Buddy Pro prepares your page."
+    />
+  );
+}
 
   const selectedReport = activeTab === "weekly" ? weeklyReport : monthlyReport;
   const summary = selectedReport?.summary || {};

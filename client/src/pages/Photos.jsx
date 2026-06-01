@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Camera, Trash2, Upload, Image } from "lucide-react";
 import api from "../services/api";
+import PageLoader from "../components/common/PageLoader";
 
 const getTodayDate = () => {
   const date = new Date();
@@ -155,8 +156,13 @@ const Photos = () => {
   };
 
   if (loading) {
-    return <div className="text-slate-300">Loading progress photos...</div>;
-  }
+  return (
+    <PageLoader
+      title="Loading data"
+      message="Please wait while Fitness Buddy Pro prepares your page."
+    />
+  );
+}
 
   const frontPhotos = photos.filter((photo) => photo.photoType === "front");
   const sidePhotos = photos.filter((photo) => photo.photoType === "side");

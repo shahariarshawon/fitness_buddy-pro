@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Dumbbell } from "lucide-react";
 import api from "../services/api";
+import PageLoader from "../components/common/PageLoader";
 
 const initialExercise = {
   name: "",
@@ -182,8 +183,13 @@ const Workouts = () => {
   };
 
   if (loading) {
-    return <div className="text-slate-300">Loading workouts...</div>;
-  }
+  return (
+    <PageLoader
+      title="Loading data"
+      message="Please wait while Fitness Buddy Pro prepares your page."
+    />
+  );
+}
 
   return (
     <div>

@@ -1,14 +1,16 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/useAuth"; 
+import { useAuth } from "../context/useAuth";
+import PageLoader from "../components/common/PageLoader";
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
-        Loading...
-      </div>
+      <PageLoader
+        title="Checking your session"
+        message="Please wait while we prepare your Fitness Buddy Pro account."
+      />
     );
   }
 

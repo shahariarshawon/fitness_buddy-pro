@@ -31,7 +31,7 @@ const DashboardLayout = () => {
             <Dumbbell size={22} />
           </div>
           <div>
-            <h1 className="font-bold text-lg">KynoraFit</h1>
+            <h1 className="font-bold text-lg">Fitness Buddy Pro</h1>
             <p className="text-xs text-slate-400">Fitness Tracker</p>
           </div>
         </div>
@@ -98,7 +98,7 @@ const DashboardLayout = () => {
           </Link>
 
 
-          
+
           <Link
             to="/profile"
             className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-300 hover:bg-slate-800"

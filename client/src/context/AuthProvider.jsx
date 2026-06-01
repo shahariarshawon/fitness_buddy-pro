@@ -4,16 +4,16 @@ import { AuthContext } from "./AuthContext";
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("kynorafit_user");
+    const savedUser = localStorage.getItem("FitnessBuddyPro_user");
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
   const [token, setToken] = useState(() => {
-    return localStorage.getItem("kynorafit_token");
+    return localStorage.getItem("FitnessBuddyPro_token");
   });
 
   const [loading, setLoading] = useState(() => {
-    return Boolean(localStorage.getItem("kynorafit_token"));
+    return Boolean(localStorage.getItem("FitnessBuddyPro_token"));
   });
 
   const isAuthenticated = Boolean(token && user);
@@ -23,8 +23,8 @@ export const AuthProvider = ({ children }) => {
 
     const { token, user } = response.data;
 
-    localStorage.setItem("kynorafit_token", token);
-    localStorage.setItem("kynorafit_user", JSON.stringify(user));
+    localStorage.setItem("FitnessBuddyPro_token", token);
+    localStorage.setItem("FitnessBuddyPro_user", JSON.stringify(user));
 
     setToken(token);
     setUser(user);
@@ -38,8 +38,8 @@ export const AuthProvider = ({ children }) => {
 
     const { token, user } = response.data;
 
-    localStorage.setItem("kynorafit_token", token);
-    localStorage.setItem("kynorafit_user", JSON.stringify(user));
+    localStorage.setItem("FitnessBuddyPro_token", token);
+    localStorage.setItem("FitnessBuddyPro_user", JSON.stringify(user));
 
     setToken(token);
     setUser(user);
@@ -49,8 +49,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem("kynorafit_token");
-    localStorage.removeItem("kynorafit_user");
+    localStorage.removeItem("FitnessBuddyPro_token");
+    localStorage.removeItem("FitnessBuddyPro_user");
 
     setToken(null);
     setUser(null);
@@ -71,14 +71,14 @@ export const AuthProvider = ({ children }) => {
         if (isMounted) {
           setUser(response.data.user);
           localStorage.setItem(
-            "kynorafit_user",
+            "FitnessBuddyPro_user",
             JSON.stringify(response.data.user)
           );
         }
       } catch (error) {
         if (isMounted) {
-          localStorage.removeItem("kynorafit_token");
-          localStorage.removeItem("kynorafit_user");
+          localStorage.removeItem("FitnessBuddyPro_token");
+          localStorage.removeItem("FitnessBuddyPro_user");
 
           setToken(null);
           setUser(null);

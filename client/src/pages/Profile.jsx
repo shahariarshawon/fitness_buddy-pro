@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import PageLoader from "../components/common/PageLoader";
 
 const Profile = () => {
   const [formData, setFormData] = useState({
@@ -154,9 +155,14 @@ const Profile = () => {
     }
   };
 
-  if (loading) {
-    return <div className="text-slate-300">Loading profile...</div>;
-  }
+ if (loading) {
+  return (
+    <PageLoader
+      title="Loading data"
+      message="Please wait while Fitness Buddy Pro prepares your page."
+    />
+  );
+}
 
   return (
     <div>

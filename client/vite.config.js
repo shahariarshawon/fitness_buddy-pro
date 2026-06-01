@@ -1,7 +1,88 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: "autoUpdate",
+
+      includeAssets: [
+        "favicon.ico",
+        "icons/icon-192.png",
+        "icons/icon-512.png",
+        "icons/maskable-icon-512.png",
+      ],
+
+      manifest: {
+        name: "FitnessBuddyPro",
+        short_name: "FitnessBuddy",
+        description:
+          "A modern fitness, workout, diet, habit, and transformation tracking app.",
+        theme_color: "#f97316",
+        background_color: "#020617",
+        display: "standalone",
+        orientation: "portrait",
+        scope: "/",
+        start_url: "/",
+        icons: [
+          {
+            src: "/icons/icon-192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "/icons/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "/icons/maskable-icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+        ],
+      },
+
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webp}"],
+
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) =>
+              url.origin === "http://localhost:5000" ||
+              url.origin.includes("render.com"),
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "FitnessBuddyPro-api-cache",
+              expiration: {
+                maxEntries: 80,
+                maxAgeSeconds: 60 * 60 * 24,
+              },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          {
+            urlPattern: ({ request }) => request.destination === "image",
+            handler: "CacheFirst",
+            options: {
+              cacheName: "FitnessBuddyPro-image-cache",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+            },
+          },
+        ],
+      },
+
+      devOptions: {
+        enabled: true,
+      },
+    }),
+  ],
 });

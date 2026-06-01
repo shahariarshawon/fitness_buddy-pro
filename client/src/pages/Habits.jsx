@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle, CalendarDays, Flame, BarChart3 } from "lucide-react";
 import api from "../services/api";
+import PageLoader from "../components/common/PageLoader";
 
 const getTodayDate = () => {
   const date = new Date();
@@ -193,9 +194,14 @@ const Habits = () => {
     }
   };
 
-  if (loading) {
-    return <div className="text-slate-300">Loading habits...</div>;
-  }
+ if (loading) {
+  return (
+    <PageLoader
+      title="Loading data"
+      message="Please wait while Fitness Buddy Pro prepares your page."
+    />
+  );
+}
 
   const liveCompletion = calculateLocalCompletion();
 

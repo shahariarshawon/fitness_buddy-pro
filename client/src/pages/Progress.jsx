@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Trash2, Scale, Ruler, TrendingDown, Activity } from "lucide-react";
 import api from "../services/api";
+import PageLoader from "../components/common/PageLoader";
 
 const getTodayDate = () => {
   const date = new Date();
@@ -163,8 +164,13 @@ const Progress = () => {
   };
 
   if (loading) {
-    return <div className="text-slate-300">Loading progress...</div>;
-  }
+  return (
+    <PageLoader
+      title="Loading data"
+      message="Please wait while Fitness Buddy Pro prepares your page."
+    />
+  );
+}
 
   const changes = summary?.changes || {};
 

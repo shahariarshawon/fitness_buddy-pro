@@ -12,7 +12,7 @@ const api = axios.create({
 // Add token automatically to protected requests
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("kynorafit_token");
+    const token = localStorage.getItem("FitnessBuddyPro_token");
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -30,8 +30,8 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem("kynorafit_token");
-      localStorage.removeItem("kynorafit_user");
+      localStorage.removeItem("FitnessBuddyPro_token");
+      localStorage.removeItem("FitnessBuddyPro_user");
     }
 
     return Promise.reject(error);

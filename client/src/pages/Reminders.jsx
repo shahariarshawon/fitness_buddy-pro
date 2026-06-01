@@ -12,6 +12,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import api from "../services/api";
+import PageLoader from "../components/common/PageLoader";
 
 const reminderTypes = [
   { value: "workout", label: "Workout" },
@@ -197,9 +198,14 @@ const Reminders = () => {
     }
   };
 
-  if (loading) {
-    return <div className="text-slate-300">Loading reminders...</div>;
-  }
+ if (loading) {
+  return (
+    <PageLoader
+      title="Loading data"
+      message="Please wait while Fitness Buddy Pro prepares your page."
+    />
+  );
+}
 
   const inactiveCount = reminders.filter((item) => !item.isActive).length;
 
