@@ -1,111 +1,69 @@
-const mongoose = require("mongoose");
-
 const foodItemSchema = new mongoose.Schema(
   {
+    food: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Food",
+      default: null,
+    },
+
     name: {
       type: String,
-      required: [true, "Food name is required"],
+      required: true,
       trim: true,
     },
 
     quantity: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+
+    unit: {
       type: String,
-      default: "",
-      trim: true,
+      required: true,
+      // g, cup, piece, roti, bowl, tbsp, tsp, scoop
+    },
+
+    gramAmount: {
+      type: Number,
+      required: true,
+      min: 0,
     },
 
     calories: {
       type: Number,
-      required: true,
-      min: 0,
+      default: 0,
     },
 
     protein: {
       type: Number,
       default: 0,
-      min: 0,
     },
 
     carbs: {
       type: Number,
       default: 0,
-      min: 0,
     },
 
     fats: {
       type: Number,
       default: 0,
-      min: 0,
+    },
+
+    fiber: {
+      type: Number,
+      default: 0,
+    },
+
+    sugar: {
+      type: Number,
+      default: 0,
+    },
+
+    sodium: {
+      type: Number,
+      default: 0,
     },
   },
   { _id: false }
 );
-
-const mealSchema = new mongoose.Schema(
-  {
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-
-    date: {
-      type: Date,
-      default: Date.now,
-    },
-
-    mealType: {
-      type: String,
-      enum: [
-        "breakfast",
-        "lunch",
-        "dinner",
-        "snacks",
-        "pre_workout",
-        "post_workout",
-      ],
-      required: [true, "Meal type is required"],
-    },
-
-    foods: {
-      type: [foodItemSchema],
-      required: true,
-      default: [],
-    },
-
-    totalCalories: {
-      type: Number,
-      default: 0,
-    },
-
-    totalProtein: {
-      type: Number,
-      default: 0,
-    },
-
-    totalCarbs: {
-      type: Number,
-      default: 0,
-    },
-
-    totalFats: {
-      type: Number,
-      default: 0,
-    },
-
-    notes: {
-      type: String,
-      default: "",
-      trim: true,
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
-
-mealSchema.index({ user: 1, date: -1 });
-
-const Meal = mongoose.model("Meal", mealSchema);
-
-module.exports = Meal;

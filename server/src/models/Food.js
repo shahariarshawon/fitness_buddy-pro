@@ -1,16 +1,31 @@
 const mongoose = require("mongoose");
 
+const servingUnitSchema = new mongoose.Schema(
+  {
+    unit: {
+      type: String,
+      required: true,
+      // examples: g, kg, ml, cup, tbsp, tsp, piece, bowl, plate, roti, egg, scoop
+    },
+    gramEquivalent: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    label: {
+      type: String,
+      default: "",
+      // example: "1 medium roti", "1 cup cooked rice"
+    },
+  },
+  { _id: false }
+);
+
 const foodSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Food name is required"],
-      trim: true,
-    },
-
-    brand: {
-      type: String,
-      default: "",
+      required: true,
       trim: true,
     },
 
@@ -32,52 +47,51 @@ const foodSchema = new mongoose.Schema(
       default: "other",
     },
 
-    servingSize: {
-      type: String,
-      default: "100g",
-      trim: true,
-    },
-
-    calories: {
+    caloriesPer100g: {
       type: Number,
-      required: [true, "Calories are required"],
+      required: true,
       min: 0,
     },
 
-    protein: {
+    proteinPer100g: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    carbs: {
+    carbsPer100g: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    fats: {
+    fatsPer100g: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    fiber: {
+    fiberPer100g: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    sugar: {
+    sugarPer100g: {
       type: Number,
       default: 0,
       min: 0,
     },
 
-    sodium: {
+    sodiumPer100g: {
       type: Number,
       default: 0,
       min: 0,
+    },
+
+    servingUnits: {
+      type: [servingUnitSchema],
+      default: [],
     },
 
     isCustom: {
@@ -97,13 +111,9 @@ const foodSchema = new mongoose.Schema(
       trim: true,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 foodSchema.index({ name: "text", category: 1, createdBy: 1 });
 
-const Food = mongoose.model("Food", foodSchema);
-
-module.exports = Food;
+module.exports = mongoose.model("Food", foodSchema);
