@@ -10,6 +10,9 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import Profile from "./pages/Profile";
 import Workouts from "./pages/Workouts";
 import Meals from "./pages/Meals";
+import Habits from "./pages/Habits";
+import Progress from "./pages/Progress";
+import Photos from "./pages/Photos";
 
 const App = () => {
   return (
@@ -30,6 +33,9 @@ const App = () => {
         <Route path="/profile" element={<Profile />} />
         <Route path="/workouts" element={<Workouts />} />
         <Route path="/meals" element={<Meals />} />
+        <Route path="/habits" element={<Habits />} />
+        <Route path="/progress" element={<Progress />} />
+        <Route path="/photos" element={<Photos />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

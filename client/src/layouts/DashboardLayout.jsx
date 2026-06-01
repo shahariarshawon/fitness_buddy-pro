@@ -1,5 +1,15 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { Activity, Dumbbell, Home, LogOut, User, Utensils } from "lucide-react";
+import {
+  Activity,
+  Camera,
+  CheckCircle,
+  Dumbbell,
+  Home,
+  LogOut,
+  Scale,
+  User,
+  Utensils,
+} from "lucide-react";
 import { useAuth } from "../context/useAuth";
 
 const DashboardLayout = () => {
@@ -47,10 +57,28 @@ const DashboardLayout = () => {
             Meals
           </Link>
 
-            
+          <Link
+            to="/habits"
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-300 hover:bg-slate-800"
+          >
+            <CheckCircle size={18} />
+            Habits
+          </Link>
 
-
-
+          <Link
+            to="/progress"
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-300 hover:bg-slate-800"
+          >
+            <Scale size={18} />
+            Progress
+          </Link>
+          <Link
+            to="/photos"
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-300 hover:bg-slate-800"
+          >
+            <Camera size={18} />
+            Photos
+          </Link>
           <Link
             to="/profile"
             className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-300 hover:bg-slate-800"
