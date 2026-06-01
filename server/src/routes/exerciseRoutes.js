@@ -6,13 +6,21 @@ const {
   getExerciseById,
   updateExercise,
   deleteExercise,
+  getExerciseFilters,
+  getRecommendedExercises,
 } = require("../controllers/exerciseController");
 
 const { protect } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
-router.route("/").post(protect, createExercise).get(protect, getExercises);
+router.get("/meta/filters", protect, getExerciseFilters);
+router.get("/recommendations", protect, getRecommendedExercises);
+
+router
+  .route("/")
+  .post(protect, createExercise)
+  .get(protect, getExercises);
 
 router
   .route("/:id")
