@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import { Activity, Dumbbell, Home, LogOut, User } from "lucide-react";
+import { Activity, Dumbbell, Home, LogOut, User, Utensils } from "lucide-react";
 import { useAuth } from "../context/useAuth";
 
 const DashboardLayout = () => {
@@ -39,6 +39,18 @@ const DashboardLayout = () => {
             <Activity size={18} />
             Workouts
           </Link>
+          <Link
+            to="/meals"
+            className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-300 hover:bg-slate-800"
+          >
+            <Utensils size={18} />
+            Meals
+          </Link>
+
+            
+
+
+
           <Link
             to="/profile"
             className="flex items-center gap-3 rounded-xl px-4 py-3 text-slate-300 hover:bg-slate-800"

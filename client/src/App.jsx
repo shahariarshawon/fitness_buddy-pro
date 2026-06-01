@@ -9,6 +9,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Profile from "./pages/Profile";
 import Workouts from "./pages/Workouts";
+import Meals from "./pages/Meals";
 
 const App = () => {
   return (
@@ -28,6 +29,7 @@ const App = () => {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/workouts" element={<Workouts />} />
+        <Route path="/meals" element={<Meals />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
