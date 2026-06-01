@@ -11,6 +11,7 @@ const userRoutes = require("./routes/userRoutes");
 const exerciseRoutes = require("./routes/exerciseRoutes");
 const foodRoutes = require("./routes/foodRoutes");
 const photoRoutes = require("./routes/photoRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
@@ -63,6 +64,8 @@ app.use("/api/exercises", exerciseRoutes);
 app.use("/api/foods", foodRoutes);
 // photo routes
 app.use("/api/photos", photoRoutes);
+// report routes
+app.use("/api/reports", reportRoutes);
 
 // Error middleware
 app.use(notFound);
