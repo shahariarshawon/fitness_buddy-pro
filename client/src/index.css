@@ -4,22 +4,27 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: unset;
   min-height: 100vh;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   background: #020617;
   color: #ffffff;
-}
-
-#root {
-  min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
 }
 
 button,
@@ -37,6 +42,7 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
 @keyframes loadingBar {
   0% {
     transform: translateX(-100%);

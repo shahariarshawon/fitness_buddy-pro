@@ -391,7 +391,7 @@ const Dashboard = () => {
               </p>
             </div>
 
-            <Droplets className="text-orange-400" size={22} />
+            <Droplets className="text-[#00809d]" size={22} />
           </div>
 
           {chartData.nutritionWorkoutData.length === 0 ? (
