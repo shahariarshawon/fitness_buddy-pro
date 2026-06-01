@@ -12,6 +12,7 @@ const exerciseRoutes = require("./routes/exerciseRoutes");
 const foodRoutes = require("./routes/foodRoutes");
 const photoRoutes = require("./routes/photoRoutes");
 const reportRoutes = require("./routes/reportRoutes");
+const reminderRoutes = require("./routes/reminderRoutes");
 
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 
@@ -66,6 +67,8 @@ app.use("/api/foods", foodRoutes);
 app.use("/api/photos", photoRoutes);
 // report routes
 app.use("/api/reports", reportRoutes);
+// reminder routes
+app.use("/api/reminders", reminderRoutes);
 
 // Error middleware
 app.use(notFound);
