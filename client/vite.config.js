@@ -7,37 +7,45 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+
     VitePWA({
       registerType: "autoUpdate",
 
       includeAssets: [
         "favicon.ico",
+        "offline.html",
+        "icons/favicon.png",
         "icons/icon-192.png",
         "icons/icon-512.png",
         "icons/maskable-icon-512.png",
       ],
 
       manifest: {
-        name: "FitnessBuddyPro",
+        name: "Fitness Buddy Pro",
         short_name: "FitnessBuddy",
         description:
-          "A modern fitness, workout, diet, habit, and transformation tracking app.",
-        theme_color: "#f97316",
-        background_color: "#020617",
+          "A modern fitness, workout, diet, habit, meal, reminder, and body transformation tracking app.",
+
+        theme_color: "#009587",
+        background_color: "#031113",
+
         display: "standalone",
         orientation: "portrait",
         scope: "/",
         start_url: "/",
+
         icons: [
           {
             src: "/icons/icon-192.png",
             sizes: "192x192",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "/icons/icon-512.png",
             sizes: "512x512",
             type: "image/png",
+            purpose: "any",
           },
           {
             src: "/icons/maskable-icon-512.png",
@@ -72,7 +80,7 @@ export default defineConfig({
             options: {
               cacheName: "FitnessBuddyPro-image-cache",
               expiration: {
-                maxEntries: 100,
+                maxEntries: 120,
                 maxAgeSeconds: 60 * 60 * 24 * 30,
               },
             },

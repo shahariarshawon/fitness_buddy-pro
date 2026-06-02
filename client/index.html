@@ -3,23 +3,47 @@
   <head>
     <meta charset="UTF-8" />
 
-   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
 
     <meta
       name="description"
-      content="Fitness Buddy Pro is a modern fitness, workout, diet, habit, and body transformation tracking app."
+      content="Fitness Buddy Pro is a modern fitness, workout, diet, habit, meal, and body transformation tracking app."
     />
 
-    <meta name="theme-color" content="#f97316" />
+    <meta name="application-name" content="Fitness Buddy Pro" />
+    <meta name="apple-mobile-web-app-title" content="Fitness Buddy Pro" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <meta name="theme-color" content="#009587" />
+    <meta name="msapplication-TileColor" content="#009587" />
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon.png" />
+
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+
+    <!-- Apple Icon -->
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
 
     <title>Fitness Buddy Pro</title>
   </head>
 
   <body>
+    <noscript>
+      Fitness Buddy Pro requires JavaScript to run. Please enable JavaScript in
+      your browser.
+    </noscript>
+
     <div id="root"></div>
 
     <script type="module" src="/src/main.jsx"></script>
