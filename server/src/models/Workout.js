@@ -232,6 +232,55 @@ const workoutExerciseSchema = new mongoose.Schema(
       // seconds
     },
 
+ duration: {
+      type: Number,
+      default: 0,
+      min: 0,
+      // minutes
+    },
+
+    distance: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    distanceUnit: {
+      type: String,
+      enum: ["km", "mile", "meter", ""],
+      default: "km",
+    },
+
+    incline: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    averageSpeed: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    intensity: {
+      type: String,
+      enum: ["low", "easy", "moderate", "high", "hard", "max", "interval", ""],
+      default: "",
+    },
+
+    metValue: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
+    caloriesBurned: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     /**
      * New planned target fields.
      */
@@ -634,8 +683,86 @@ const estimateCalories = ({ metValue, bodyWeightKg, duration }) => {
   return round((metValue * 3.5 * bodyWeightKg * duration) / 200);
 };
 
+const getIntensityMultiplier = (intensity = "") => {
+  const value = String(intensity || "").toLowerCase();
+
+  if (["low", "easy"].includes(value)) return 0.85;
+  if (["moderate", ""].includes(value)) return 1;
+  if (["high", "hard"].includes(value)) return 1.2;
+  if (["max", "interval"].includes(value)) return 1.35;
+
+  return 1;
+};
+
+const getExerciseMetValue = (exercise = {}, workoutType = "strength") => {
+  const category = exercise.category || workoutType;
+  const name = String(exercise.name || "").toLowerCase();
+
+  if (exercise.metValue && Number(exercise.metValue) > 0) {
+    return Number(exercise.metValue);
+  }
+
+  if (category === "cardio") {
+    if (name.includes("incline")) return 5.5;
+    if (name.includes("walk") || name.includes("treadmill")) return 4.5;
+    if (name.includes("bike")) return 6;
+    if (name.includes("elliptical")) return 5.5;
+    if (name.includes("run")) return 8;
+    if (name.includes("stairs")) return 8;
+    if (name.includes("row")) return 7;
+
+    return 6;
+  }
+
+  if (category === "mobility" || category === "stretching") return 2.5;
+  if (category === "bodyweight") return 4;
+  if (category === "strength") return 4.5;
+  if (workoutType === "mixed") return 5;
+
+  return 3.5;
+};
+
+const estimateStrengthExerciseMinutes = (exercise = {}) => {
+  const sets = Number(exercise.actualSets || exercise.sets || 0);
+  const reps = Number(exercise.reps || 0);
+  const restTime = Number(exercise.restTime || exercise.targetRestTime || 60);
+
+  if (!sets || !reps) return 0;
+
+  // Practical estimate:
+  // each rep around 3 seconds + rest between sets
+  const workSeconds = sets * reps * 3;
+  const restSeconds = Math.max(sets - 1, 0) * restTime;
+
+  return round((workSeconds + restSeconds) / 60);
+};
+
+const estimateExerciseCalories = ({ exercise, bodyWeightKg, workoutType }) => {
+  if (!exercise || !bodyWeightKg) return 0;
+
+  const isTimedExercise =
+    exercise.category === "cardio" ||
+    exercise.category === "mobility" ||
+    exercise.category === "stretching";
+
+  const metValue =
+    getExerciseMetValue(exercise, workoutType) *
+    getIntensityMultiplier(exercise.intensity);
+
+  const duration = isTimedExercise
+    ? Number(exercise.duration || 0)
+    : estimateStrengthExerciseMinutes(exercise);
+
+  return estimateCalories({
+    metValue,
+    bodyWeightKg,
+    duration,
+  });
+};
+
 /**
- * Normalize date.
+ * Normalize date and auto-calculate workout totals before validation/save.
+ * This also makes the preview endpoint work because preview uses validate().
  */
 workoutSchema.pre("validate", function () {
   if (this.date) {
@@ -643,12 +770,7 @@ workoutSchema.pre("validate", function () {
     normalizedDate.setHours(0, 0, 0, 0);
     this.date = normalizedDate;
   }
-});
 
-/**
- * Auto-calculate workout totals, volume, completion, RPE, pain, and suggestions.
- */
-workoutSchema.pre("save", function () {
   let totalSets = 0;
   let totalReps = 0;
   let totalVolume = 0;
@@ -658,19 +780,30 @@ workoutSchema.pre("save", function () {
   let painReported = false;
   let progressionEligibleCount = 0;
 
+  let totalExerciseCalories = 0;
+  let exerciseCardioDuration = 0;
+  let estimatedStrengthDuration = 0;
+
+  const bodyWeightKg = Number(this.bodyWeightKg || 0);
+
   this.exercises.forEach((exercise) => {
     const setLogs = exercise.setLogs || [];
 
+    const isTimedExercise =
+      exercise.category === "cardio" ||
+      exercise.category === "mobility" ||
+      exercise.category === "stretching";
+
     if (setLogs.length > 0) {
       const completedSets = setLogs.filter((set) => set.completed);
+
       const exerciseReps = completedSets.reduce(
         (sum, set) => sum + Number(set.reps || 0),
         0
       );
 
       const exerciseVolume = completedSets.reduce(
-        (sum, set) =>
-          sum + Number(set.reps || 0) * Number(set.weight || 0),
+        (sum, set) => sum + Number(set.reps || 0) * Number(set.weight || 0),
         0
       );
 
@@ -702,18 +835,29 @@ workoutSchema.pre("save", function () {
       exercise.completed =
         completedSets.length >= Number(exercise.targetSets || exercise.sets || 0) ||
         completedSets.length >= Number(exercise.sets || 0);
+    } else if (isTimedExercise) {
+      /**
+       * Cardio/mobility/stretching does not need sets/reps.
+       */
+      exercise.actualSets = Number(exercise.duration || 0) > 0 ? 1 : 0;
+      exercise.actualReps = 0;
+      exercise.volume = 0;
+      exercise.bestSetWeight = 0;
+      exercise.completed = !exercise.skipped && Number(exercise.duration || 0) > 0;
     } else {
       /**
-       * Fallback for old simple input:
+       * Fallback for old simple strength input:
        * sets × reps × weight
        */
       exercise.actualSets = Number(exercise.sets || 0);
       exercise.actualReps =
         Number(exercise.sets || 0) * Number(exercise.reps || 0);
+
       exercise.volume =
         Number(exercise.sets || 0) *
         Number(exercise.reps || 0) *
         Number(exercise.weight || 0);
+
       exercise.bestSetWeight = Number(exercise.weight || 0);
       exercise.completed = !exercise.skipped && Number(exercise.sets || 0) > 0;
     }
@@ -727,7 +871,7 @@ workoutSchema.pre("save", function () {
       exercise.progressionEligible = false;
       exercise.progressionSuggestion =
         "Do not increase weight next time. Repeat safely or use a replacement exercise.";
-    } else {
+    } else if (!isTimedExercise) {
       const topRepTarget = Number(exercise.targetRepsMax || exercise.reps || 0);
       const targetSets = Number(exercise.targetSets || exercise.sets || 0);
 
@@ -736,8 +880,7 @@ workoutSchema.pre("save", function () {
         topRepTarget > 0 &&
         exercise.actualReps >= targetSets * topRepTarget;
 
-      const rpeOkay =
-        !exercise.averageRpe || Number(exercise.averageRpe) <= 8;
+      const rpeOkay = !exercise.averageRpe || Number(exercise.averageRpe) <= 8;
 
       if (exercise.completed && reachedTopRange && rpeOkay) {
         exercise.progressionEligible = true;
@@ -750,6 +893,25 @@ workoutSchema.pre("save", function () {
           "Repeat the same weight and try to improve reps or form next time.";
       }
     }
+
+    /**
+     * Duration and calorie calculation by exercise.
+     */
+    if (isTimedExercise) {
+      exerciseCardioDuration += Number(exercise.duration || 0);
+    } else {
+      estimatedStrengthDuration += estimateStrengthExerciseMinutes(exercise);
+    }
+
+    if (!exercise.caloriesBurned || Number(exercise.caloriesBurned) <= 0) {
+      exercise.caloriesBurned = estimateExerciseCalories({
+        exercise,
+        bodyWeightKg,
+        workoutType: this.workoutType,
+      });
+    }
+
+    totalExerciseCalories += Number(exercise.caloriesBurned || 0);
 
     totalSets += Number(exercise.actualSets || 0);
     totalReps += Number(exercise.actualReps || 0);
@@ -779,38 +941,53 @@ workoutSchema.pre("save", function () {
     this.status = "partially_completed";
   }
 
-  if (this.cardio && this.cardio.duration > 0) {
-    this.cardioDuration = this.cardio.duration;
+  /**
+   * Cardio duration can come from:
+   * 1. cardioDuration field
+   * 2. cardio object
+   * 3. exercise-level cardio duration
+   */
+  const mainCardioDuration = Number(this.cardioDuration || 0);
+  const cardioObjectDuration = Number(this.cardio?.duration || 0);
 
-    if (!this.cardio.caloriesBurned && this.bodyWeightKg) {
+  this.cardioDuration = Math.max(
+    mainCardioDuration,
+    cardioObjectDuration,
+    exerciseCardioDuration
+  );
+
+  if (this.cardio && cardioObjectDuration > 0) {
+    if (!this.cardio.caloriesBurned && bodyWeightKg) {
       this.cardio.caloriesBurned = estimateCalories({
-        metValue: this.cardio.metValue,
-        bodyWeightKg: this.bodyWeightKg,
-        duration: this.cardio.duration,
+        metValue: this.cardio.metValue || 5,
+        bodyWeightKg,
+        duration: cardioObjectDuration,
       });
     }
   }
 
   /**
-   * Estimate total calories only if not manually provided.
+   * If total duration is not given, estimate it from:
+   * warmup + strength exercise time + cardio time + cooldown.
    */
-  if (!this.caloriesBurned && this.bodyWeightKg && this.duration) {
-    const workoutMetValues = {
-      strength: 4.5,
-      cardio: 6,
-      mixed: 5.5,
-      bodyweight: 4,
-      mobility: 2.5,
-      other: 3.5,
-    };
+  if (!this.duration || Number(this.duration) <= 0) {
+    this.duration = round(
+      Number(this.warmupDuration || 0) +
+        Number(estimatedStrengthDuration || 0) +
+        Number(this.cardioDuration || 0) +
+        Number(this.coolDownDuration || 0)
+    );
+  }
 
-    const metValue = workoutMetValues[this.workoutType] || 4.5;
+  /**
+   * Auto-calculate total calories if not manually provided.
+   */
+  if (!this.caloriesBurned || Number(this.caloriesBurned) <= 0) {
+    const cardioObjectCalories = Number(this.cardio?.caloriesBurned || 0);
 
-    this.caloriesBurned = estimateCalories({
-      metValue,
-      bodyWeightKg: this.bodyWeightKg,
-      duration: this.duration,
-    });
+    this.caloriesBurned = round(
+      Number(totalExerciseCalories || 0) + cardioObjectCalories
+    );
   }
 
   /**
@@ -858,7 +1035,6 @@ workoutSchema.pre("save", function () {
     this.nextWorkoutSuggestion =
       "Repeat this workout with manageable load next time.";
   }
-
 });
 
 workoutSchema.methods.getWorkoutSummary = function () {

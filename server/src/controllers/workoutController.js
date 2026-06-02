@@ -25,9 +25,17 @@ const addDays = (dateInput, days) => {
 const getDateKey = (dateInput) => {
   return new Date(dateInput).toISOString().split("T")[0];
 };
+const getBodyWeightKg = (inputWeight, user) => {
+  return Number(
+    inputWeight ||
+    user?.currentWeight ||
+    user?.weight ||
+    user?.startingWeight ||
+    100
+  );
+};
 
 const getExerciseAccessQuery = (userId) => ({
-  isActive: true,
   $or: [{ isCustom: false }, { createdBy: userId }],
 });
 
@@ -194,9 +202,9 @@ const buildWorkoutExerciseFromInput = async ({ item, userId, bodyWeightKg }) => 
 
     const reps = Number(
       item.reps ||
-        item.targetRepsMax ||
-        exerciseFromLibrary?.defaultReps ||
-        10
+      item.targetRepsMax ||
+      exerciseFromLibrary?.defaultReps ||
+      10
     );
 
     const targetRepsMin = Number(
@@ -216,9 +224,9 @@ const buildWorkoutExerciseFromInput = async ({ item, userId, bodyWeightKg }) => 
       weightUnit: item.weightUnit || "kg",
       restTime: Number(
         item.restTime ||
-          item.targetRestTime ||
-          exerciseFromLibrary?.defaultRestTime ||
-          60
+        item.targetRestTime ||
+        exerciseFromLibrary?.defaultRestTime ||
+        60
       ),
 
       targetSets: Number(item.targetSets || sets),
@@ -227,9 +235,9 @@ const buildWorkoutExerciseFromInput = async ({ item, userId, bodyWeightKg }) => 
       targetWeight: Number(item.targetWeight || item.weight || 0),
       targetRestTime: Number(
         item.targetRestTime ||
-          item.restTime ||
-          exerciseFromLibrary?.defaultRestTime ||
-          60
+        item.restTime ||
+        exerciseFromLibrary?.defaultRestTime ||
+        60
       ),
 
       setLogs: buildSetLogsFromSimpleInput({
@@ -258,17 +266,17 @@ const buildWorkoutExerciseFromInput = async ({ item, userId, bodyWeightKg }) => 
   if (category === "cardio") {
     const duration = Number(
       item.duration ||
-        item.cardioDuration ||
-        exerciseFromLibrary?.defaultDurationMinutes ||
-        0
+      item.cardioDuration ||
+      exerciseFromLibrary?.defaultDurationMinutes ||
+      0
     );
 
     const cardioType = item.cardioType || item.name || "other";
     const intensity = item.intensity || "moderate";
     const metValue = Number(
       item.metValue ||
-        exerciseFromLibrary?.calorieMetValue ||
-        getMetValue("cardio", cardioType, intensity)
+      exerciseFromLibrary?.calorieMetValue ||
+      getMetValue("cardio", cardioType, intensity)
     );
 
     const caloriesBurned =
@@ -474,8 +482,7 @@ const createWorkout = async (req, res, next) => {
 
     let workoutData = normalizeArrayFields(filterAllowedFields(req.body));
 
-    const bodyWeightKg =
-      Number(workoutData.bodyWeightKg || user.currentWeight || user.startingWeight || 0);
+    const bodyWeightKg = getBodyWeightKg(workoutData.bodyWeightKg, user);
 
     const builtExercises = await buildWorkoutExercises({
       exercises: workoutData.exercises || [],
@@ -643,9 +650,7 @@ const previewWorkout = async (req, res, next) => {
       throw new Error("User not found");
     }
 
-    const bodyWeightKg = Number(
-      req.body.bodyWeightKg || user.currentWeight || user.startingWeight || 0
-    );
+    const bodyWeightKg = getBodyWeightKg(req.body.bodyWeightKg, user);
 
     const builtExercises = await buildWorkoutExercises({
       exercises: req.body.exercises || [],
@@ -830,12 +835,10 @@ const updateWorkout = async (req, res, next) => {
     let workoutData = normalizeArrayFields(filterAllowedFields(req.body));
 
     if (req.body.exercises) {
-      const bodyWeightKg = Number(
-        workoutData.bodyWeightKg ||
-          workout.bodyWeightKg ||
-          user.currentWeight ||
-          user.startingWeight ||
-          0
+
+      const bodyWeightKg = getBodyWeightKg(
+        workoutData.bodyWeightKg || workout.bodyWeightKg,
+        user
       );
 
       const builtExercises = await buildWorkoutExercises({

@@ -391,6 +391,13 @@ const Workouts = () => {
   const resetForm = () => {
     setFormData(defaultFormData);
   };
+  const getManualCaloriesValue = (value) => {
+    if (value === "" || value === null || value === undefined) {
+      return 0;
+    }
+
+    return Number(value || 0);
+  };
 
   const buildWorkoutPayload = () => {
     const exercises = formData.exercises
@@ -412,7 +419,7 @@ const Workouts = () => {
             distance: Number(exercise.distance || 0),
             distanceUnit: exercise.distanceUnit || "km",
             intensity: exercise.intensity || "moderate",
-            caloriesBurned: estimateExerciseCalories(exercise),
+            caloriesBurned: getManualCaloriesValue(exercise.caloriesBurned),
             sets: 0,
             reps: 0,
             weight: 0,
@@ -427,7 +434,7 @@ const Workouts = () => {
           weight: Number(exercise.weight || 0),
           restTime: Number(exercise.restTime || 0),
           duration: Number(exercise.duration || 0),
-          caloriesBurned: estimateExerciseCalories(exercise),
+          caloriesBurned: getManualCaloriesValue(exercise.caloriesBurned),
         };
       });
 
@@ -439,9 +446,7 @@ const Workouts = () => {
       cardioDuration: Number(
         formData.cardioDuration || formStats.cardioDuration || 0,
       ),
-      caloriesBurned: Number(
-        formData.caloriesBurned || formStats.estimatedCalories || 0,
-      ),
+      caloriesBurned: getManualCaloriesValue(formData.caloriesBurned),
       perceivedEffort:
         formData.perceivedEffort === ""
           ? undefined
