@@ -536,7 +536,7 @@ const getActivityMultiplier = (activityLevel) => {
 /**
  * Auto-calculate age, BMI, BMR, maintenance calories, and target sync.
  */
-userSchema.pre("validate", function (next) {
+userSchema.pre("validate", function () {
   if (this.dateOfBirth) {
     const today = new Date();
     const dob = new Date(this.dateOfBirth);
@@ -558,7 +558,10 @@ userSchema.pre("validate", function (next) {
 
   if (this.height && weightForCalculation) {
     const heightMeter = Number(this.height) / 100;
-    this.bmi = round(Number(weightForCalculation) / (heightMeter * heightMeter));
+    this.bmi =
+      Math.round(
+        (Number(weightForCalculation) / (heightMeter * heightMeter)) * 10
+      ) / 10;
   }
 
   if (this.height && weightForCalculation && this.age) {
@@ -572,38 +575,40 @@ userSchema.pre("validate", function (next) {
       genderValue = -161;
     }
 
-    // Mifflin-St Jeor estimate
-    this.bmr = round(
-      10 * Number(weightForCalculation) +
-        6.25 * Number(this.height) -
-        5 * Number(this.age) +
-        genderValue
-    );
+    this.bmr =
+      Math.round(
+        (10 * Number(weightForCalculation) +
+          6.25 * Number(this.height) -
+          5 * Number(this.age) +
+          genderValue) *
+          10
+      ) / 10;
 
-    this.estimatedMaintenanceCalories = round(
-      this.bmr * getActivityMultiplier(this.activityLevel)
-    );
+    const multipliers = {
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725,
+      very_active: 1.9,
+    };
+
+    const multiplier = multipliers[this.activityLevel] || 1.55;
+
+    this.estimatedMaintenanceCalories =
+      Math.round(this.bmr * multiplier * 10) / 10;
   }
 
-  /**
-   * Safety flag for higher BMI users.
-   * This does not block app use; it only helps show a warning in UI.
-   */
-  if (this.bmi && this.bmi >= 30) {
+  if (this.bmi && this.bmi >= 30 && this.safetyProfile) {
     this.safetyProfile.medicalClearanceRecommended = true;
   }
 
-  /**
-   * Sync old target fields with new target object.
-   */
-  this.dailyTargets.calories = this.dailyCalorieTarget;
-  this.dailyTargets.protein = this.dailyProteinTarget;
-  this.dailyTargets.waterLiters = this.dailyWaterTarget;
-  this.dailyTargets.sleepHours = this.sleepTarget;
+  if (this.dailyTargets) {
+    this.dailyTargets.calories = this.dailyCalorieTarget;
+    this.dailyTargets.protein = this.dailyProteinTarget;
+    this.dailyTargets.waterLiters = this.dailyWaterTarget;
+    this.dailyTargets.sleepHours = this.sleepTarget;
+  }
 
-  /**
-   * Basic profile completion check.
-   */
   this.profileCompleted = Boolean(
     this.name &&
       this.email &&
@@ -612,30 +617,21 @@ userSchema.pre("validate", function (next) {
       weightForCalculation &&
       this.goal
   );
-
-  next();
 });
-
 /**
  * Hash password before saving user.
  */
-userSchema.pre("save", async function (next) {
-  try {
-    if (!this.isModified("password")) {
-      return next();
-    }
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) {
+    return;
+  }
 
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
 
-    if (!this.isNew) {
-      this.passwordChangedAt = new Date(Date.now() - 1000);
-      this.refreshTokenVersion += 1;
-    }
-
-    next();
-  } catch (error) {
-    next(error);
+  if (!this.isNew) {
+    this.passwordChangedAt = new Date(Date.now() - 1000);
+    this.refreshTokenVersion += 1;
   }
 });
 
