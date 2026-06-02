@@ -3,12 +3,15 @@ import {
   Activity,
   BarChart3,
   Bell,
+  CalendarDays,
   Camera,
   CheckCircle,
+  ClipboardList,
   Dumbbell,
   Home,
   LogOut,
   Scale,
+  Target,
   User,
   Utensils,
 } from "lucide-react";
@@ -16,6 +19,8 @@ import { useAuth } from "../context/useAuth";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
+  { to: "/today", label: "Today", icon: Target },
+  { to: "/plans", label: "Plans", icon: CalendarDays },
   { to: "/workouts", label: "Workouts", icon: Activity },
   { to: "/meals", label: "Meals", icon: Utensils },
   { to: "/habits", label: "Habits", icon: CheckCircle },
@@ -47,11 +52,12 @@ const DashboardLayout = () => {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#061316] text-white">
-      {/* Soft background glow */}
+      {/* Background glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-32 -right-24 h-72 w-72 rounded-full bg-[#009587]/25 blur-3xl" />
-        <div className="absolute top-1/3 -left-32 h-72 w-72 rounded-full bg-[#7f265b]/20 blur-3xl" />
-        <div className="absolute bottom-0 right-10 h-64 w-64 rounded-full bg-[#00809d]/15 blur-3xl" />
+        <div className="absolute -top-32 -right-24 h-80 w-80 rounded-full bg-[#009587]/25 blur-3xl" />
+        <div className="absolute top-1/3 -left-32 h-80 w-80 rounded-full bg-[#00809d]/20 blur-3xl" />
+        <div className="absolute bottom-0 right-10 h-72 w-72 rounded-full bg-[#00c2ad]/15 blur-3xl" />
+        <div className="absolute bottom-20 left-1/2 h-56 w-56 rounded-full bg-[#7f265b]/10 blur-3xl" />
       </div>
 
       <style>
@@ -96,8 +102,9 @@ const DashboardLayout = () => {
       </style>
 
       {/* Desktop Sidebar */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 flex-col border-r border-white/10 bg-[#07191d]/80 p-5 shadow-2xl shadow-black/20 backdrop-blur-2xl md:flex">
-        <div className="mb-8 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 flex-col border-r border-white/10 bg-[#07191d]/85 p-5 shadow-2xl shadow-black/30 backdrop-blur-2xl md:flex">
+        {/* Logo card */}
+        <div className="mb-6 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-xl shadow-black/10">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#009587] to-[#00809d] shadow-lg shadow-[#009587]/25">
               <Dumbbell size={24} />
@@ -107,12 +114,35 @@ const DashboardLayout = () => {
               <h1 className="truncate text-lg font-bold tracking-tight">
                 Fitness Buddy Pro
               </h1>
-              <p className="text-xs text-slate-400">Fitness Tracker</p>
+              <p className="text-xs text-slate-400">
+                Transformation System
+              </p>
             </div>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1.5">
+        {/* Small plan card */}
+        <div className="mb-5 rounded-3xl border border-[#009587]/20 bg-gradient-to-br from-[#009587]/15 to-[#00809d]/10 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/10">
+              <ClipboardList size={18} />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Today’s System</p>
+              <p className="text-xs text-slate-300">Workout • Meal • Habit</p>
+            </div>
+          </div>
+
+          <NavLink
+            to="/today"
+            className="inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-[#009587] to-[#00809d] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#009587]/20 transition hover:brightness-110 active:scale-[0.98]"
+          >
+            Open Today
+          </NavLink>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 space-y-1.5 overflow-y-auto pr-1 hide-scrollbar">
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -135,7 +165,7 @@ const DashboardLayout = () => {
                         : "bg-white/[0.04] group-hover:bg-white/[0.08]"
                     }`}
                   >
-                    <Icon size={18} />
+                    <Icon size={18} strokeWidth={isActive ? 2.7 : 2.2} />
                   </span>
 
                   <span>{label}</span>
@@ -149,9 +179,10 @@ const DashboardLayout = () => {
           ))}
         </nav>
 
+        {/* User card */}
         <div className="mt-5 rounded-3xl border border-white/10 bg-white/[0.04] p-3">
           <div className="mb-3 flex items-center gap-3 px-1">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#7f265b] text-sm font-bold">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7f265b] to-[#009587] text-sm font-bold">
               {userInitial}
             </div>
 
@@ -159,7 +190,9 @@ const DashboardLayout = () => {
               <p className="truncate text-sm font-semibold">
                 {user?.name || "User"}
               </p>
-              <p className="text-xs text-slate-400">Active member</p>
+              <p className="text-xs text-slate-400">
+                {user?.goal ? user.goal.replace("_", " ") : "Active member"}
+              </p>
             </div>
           </div>
 
@@ -175,7 +208,7 @@ const DashboardLayout = () => {
 
       {/* Main Area */}
       <main className="relative z-10 min-h-screen w-full min-w-0 pb-32 md:ml-72 md:w-[calc(100%-18rem)] md:pb-0">
-        {/* Mobile/Desktop Header */}
+        {/* Header */}
         <header className="sticky top-0 z-30 border-b border-white/10 bg-[#061316]/75 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] backdrop-blur-2xl md:px-6 md:pt-4">
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0 app-fade-in">
@@ -188,23 +221,27 @@ const DashboardLayout = () => {
 
               <h2 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
                 Welcome back,{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#009587] to-[#00c2ad]">
+                <span className="bg-gradient-to-r from-[#009587] to-[#00c2ad] bg-clip-text text-transparent">
                   {user?.name || "User"}
                 </span>
               </h2>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="hidden rounded-2xl border border-white/10 bg-white/[0.05] px-3 py-2 text-xs text-slate-300 sm:block">
-                Today’s Progress
-              </div>
+              <NavLink
+                to="/today"
+                className="hidden rounded-2xl border border-[#009587]/20 bg-gradient-to-r from-[#009587]/15 to-[#00809d]/15 px-4 py-2.5 text-sm font-semibold text-[#9ff7ec] transition hover:bg-[#009587]/20 sm:inline-flex"
+              >
+                Today’s Plan
+              </NavLink>
 
               <button
                 type="button"
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-slate-200 shadow-lg shadow-black/10 transition hover:bg-white/[0.1] active:scale-95"
+                className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-slate-200 shadow-lg shadow-black/10 transition hover:bg-white/[0.1] active:scale-95"
                 aria-label="Notifications"
               >
                 <Bell size={18} />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[#00c2ad] shadow-[0_0_12px_rgba(0,194,173,0.9)]" />
               </button>
 
               <button
@@ -224,12 +261,13 @@ const DashboardLayout = () => {
           </div>
         </header>
 
+        {/* Page content */}
         <div className="w-full min-w-0 p-4 app-slide-up md:p-6">
           <Outlet />
         </div>
       </main>
 
-      {/* Mobile Floating Bottom Navigation */}
+      {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:hidden">
         <div className="rounded-[2rem] border border-white/10 bg-[#07191d]/90 p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl">
           <div className="hide-scrollbar flex gap-2 overflow-x-auto">
