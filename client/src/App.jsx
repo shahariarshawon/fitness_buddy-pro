@@ -15,6 +15,8 @@ import Progress from "./pages/Progress";
 import Photos from "./pages/Photos";
 import Reports from "./pages/Reports";
 import Reminders from "./pages/Reminders";
+import Today from "./pages/Today";
+import Plans from "./pages/Plans";
 
 const App = () => {
   return (
@@ -40,6 +42,8 @@ const App = () => {
         <Route path="/photos" element={<Photos />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/reminders" element={<Reminders />} />
+        <Route path="/today" element={<Today />} />
+        <Route path="/plans" element={<Plans />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
