@@ -1,17 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  Activity,
   BarChart3,
   CalendarDays,
   Dumbbell,
   Flame,
+  RefreshCcw,
+  Scale,
+  Sparkles,
   Target,
   TrendingDown,
+  Utensils,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import api from "../services/api";
 import PageLoader from "../components/common/PageLoader";
 
 const getCurrentMonth = () => {
   const date = new Date();
+
   return {
     year: date.getFullYear(),
     month: date.getMonth() + 1,
@@ -23,6 +40,127 @@ const getDefaultWeekStart = () => {
   date.setDate(date.getDate() - 6);
   date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
   return date.toISOString().split("T")[0];
+};
+
+const monthNames = [
+  { value: 1, label: "January" },
+  { value: 2, label: "February" },
+  { value: 3, label: "March" },
+  { value: 4, label: "April" },
+  { value: 5, label: "May" },
+  { value: 6, label: "June" },
+  { value: 7, label: "July" },
+  { value: 8, label: "August" },
+  { value: 9, label: "September" },
+  { value: 10, label: "October" },
+  { value: 11, label: "November" },
+  { value: 12, label: "December" },
+];
+
+const formatNumber = (value, decimals = 0) => {
+  if (value === null || value === undefined || value === "") return "--";
+
+  const number = Number(value);
+
+  if (Number.isNaN(number)) return "--";
+
+  return number.toFixed(decimals);
+};
+
+const formatDate = (dateInput) => {
+  if (!dateInput) return "--";
+
+  return new Date(dateInput).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const formatFullDate = (dateInput) => {
+  if (!dateInput) return "No period data";
+
+  return new Date(dateInput).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const getDailyBreakdown = (report) => {
+  return report?.charts?.dailyBreakdown || report?.dailyBreakdown || [];
+};
+
+const StatCard = ({ title, value, suffix, helper, icon: Icon }) => {
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10">
+      <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#009587]/10 blur-2xl" />
+
+      <div className="relative flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm text-slate-400">{title}</p>
+
+          <h2 className="mt-2 text-3xl font-bold tracking-tight">
+            {value}
+            {suffix && (
+              <span className="text-base font-medium text-slate-400">
+                {" "}
+                {suffix}
+              </span>
+            )}
+          </h2>
+
+          {helper && <p className="mt-1 text-xs text-slate-500">{helper}</p>}
+        </div>
+
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#009587]/20 to-[#00809d]/20 text-[#9ff7ec] ring-1 ring-white/10">
+          <Icon size={21} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MiniMetric = ({ label, value, suffix, icon: Icon }) => {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-sm text-slate-400">{label}</p>
+        <Icon size={17} className="text-[#00c2ad]" />
+      </div>
+
+      <p className="text-2xl font-bold">
+        {value}
+        {suffix && (
+          <span className="text-sm font-medium text-slate-400"> {suffix}</span>
+        )}
+      </p>
+    </div>
+  );
+};
+
+const ChartCard = ({ title, subtitle, icon: Icon, empty, children }) => {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+          <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
+        </div>
+
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#009587]/20 to-[#00809d]/20 text-[#9ff7ec] ring-1 ring-white/10">
+          <Icon size={21} />
+        </div>
+      </div>
+
+      {empty ? (
+        <div className="flex h-80 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/[0.03] text-center text-sm text-slate-400">
+          No chart data available for this period.
+        </div>
+      ) : (
+        <div className="h-80">{children}</div>
+      )}
+    </div>
+  );
 };
 
 const Reports = () => {
@@ -45,35 +183,67 @@ const Reports = () => {
 
   const [error, setError] = useState("");
 
+  const getReportsPageData = async () => {
+    const [weeklyResponse, monthlyResponse, overviewResponse] =
+      await Promise.all([
+        api.get(`/reports/weekly?startDate=${weekStartDate}`),
+        api.get(
+          `/reports/monthly?year=${monthFilter.year}&month=${monthFilter.month}`
+        ),
+        api.get("/reports/overview"),
+      ]);
+
+    return {
+      weeklyData: weeklyResponse.data.report || null,
+      monthlyData: monthlyResponse.data.report || null,
+      overviewData: overviewResponse.data.overview || null,
+    };
+  };
+
+  const applyReportsPageData = ({ weeklyData, monthlyData, overviewData }) => {
+    setWeeklyReport(weeklyData);
+    setMonthlyReport(monthlyData);
+    setOverview(overviewData);
+  };
+
+  const refreshReports = async () => {
+    setReportLoading(true);
+    setError("");
+
+    try {
+      const data = await getReportsPageData();
+      applyReportsPageData(data);
+    } catch (error) {
+      setError(error.response?.data?.message || "Failed to refresh reports.");
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
 
-    Promise.all([
-      api.get(`/reports/weekly?startDate=${weekStartDate}`),
-      api.get(
-        `/reports/monthly?year=${monthFilter.year}&month=${monthFilter.month}`
-      ),
-      api.get("/reports/overview"),
-    ])
-      .then(([weeklyResponse, monthlyResponse, overviewResponse]) => {
+    const loadReports = async () => {
+      try {
+        const data = await getReportsPageData();
+
         if (!isMounted) return;
 
-        setWeeklyReport(weeklyResponse.data.report || null);
-        setMonthlyReport(monthlyResponse.data.report || null);
-        setOverview(overviewResponse.data.overview || null);
-      })
-      .catch((error) => {
+        applyReportsPageData(data);
+      } catch (error) {
         console.error("Reports fetch error:", error.response?.data || error);
 
         if (isMounted) {
-          setError("Failed to load reports.");
+          setError(error.response?.data?.message || "Failed to load reports.");
         }
-      })
-      .finally(() => {
+      } finally {
         if (isMounted) {
           setLoading(false);
         }
-      });
+      }
+    };
+
+    loadReports();
 
     return () => {
       isMounted = false;
@@ -85,7 +255,10 @@ const Reports = () => {
     setError("");
 
     try {
-      const response = await api.get(`/reports/weekly?startDate=${weekStartDate}`);
+      const response = await api.get(
+        `/reports/weekly?startDate=${weekStartDate}`
+      );
+
       setWeeklyReport(response.data.report || null);
       setActiveTab("weekly");
     } catch (error) {
@@ -103,112 +276,161 @@ const Reports = () => {
       const response = await api.get(
         `/reports/monthly?year=${monthFilter.year}&month=${monthFilter.month}`
       );
+
       setMonthlyReport(response.data.report || null);
       setActiveTab("monthly");
     } catch (error) {
-      setError(error.response?.data?.message || "Failed to load monthly report.");
+      setError(
+        error.response?.data?.message || "Failed to load monthly report."
+      );
     } finally {
       setReportLoading(false);
     }
   };
 
-  if (loading) {
-  return (
-    <PageLoader
-      title="Loading data"
-      message="Please wait while Fitness Buddy Pro prepares your page."
-    />
-  );
-}
-
   const selectedReport = activeTab === "weekly" ? weeklyReport : monthlyReport;
   const summary = selectedReport?.summary || {};
+  const dailyBreakdown = getDailyBreakdown(selectedReport);
+
+  const chartRows = useMemo(() => {
+    return dailyBreakdown.map((day) => ({
+      date: formatDate(day.date),
+      calories: Number(day.nutrition?.calories || day.calories || 0),
+      protein: Number(day.nutrition?.protein || day.protein || 0),
+      carbs: Number(day.nutrition?.carbs || day.carbs || 0),
+      fats: Number(day.nutrition?.fats || day.fats || 0),
+      burned: Number(day.workout?.caloriesBurned || day.caloriesBurned || 0),
+      workouts: Number(day.workout?.workoutCount || day.workoutCount || 0),
+      habit: Number(day.habitCompletion || day.habit?.completionPercentage || 0),
+    }));
+  }, [dailyBreakdown]);
+
+  if (loading) {
+    return (
+      <PageLoader
+        title="Loading reports"
+        message="Preparing weekly, monthly, nutrition, workout, habit, and body progress reports."
+      />
+    );
+  }
+
+  const reportPeriod =
+    selectedReport?.period?.startDate && selectedReport?.period?.endDate
+      ? `${formatFullDate(selectedReport.period.startDate)} - ${formatFullDate(
+          selectedReport.period.endDate
+        )}`
+      : "No period data";
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Reports</h1>
-        <p className="text-slate-400">
-          Review workout, nutrition, consistency, and body progress reports.
-        </p>
+    <div className="space-y-6 text-white">
+      {/* Header */}
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-[#009587]/20 via-white/[0.04] to-[#00809d]/20 p-5 shadow-2xl shadow-black/20 md:p-6">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[#00c2ad]/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-16 h-52 w-52 rounded-full bg-[#00809d]/15 blur-3xl" />
+
+        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#009587]/20 bg-[#009587]/10 px-3 py-1 text-xs font-semibold text-[#9ff7ec]">
+              <Sparkles size={14} />
+              Transformation Reports
+            </div>
+
+            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">
+              Review your progress data
+            </h1>
+
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+              Compare nutrition, workouts, calorie balance, habit consistency,
+              and body progress across weekly and monthly periods.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={refreshReports}
+            disabled={reportLoading}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.08] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCcw
+              size={16}
+              className={reportLoading ? "animate-spin" : ""}
+            />
+            {reportLoading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300">
+        <div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
           {error}
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-6">
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">Total Workouts</p>
-            <Dumbbell className="text-orange-400" size={22} />
-          </div>
-          <h2 className="mt-2 text-3xl font-bold">
-            {overview?.totalWorkouts || 0}
-          </h2>
-        </div>
+      {/* Overview Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          title="Total Workouts"
+          value={overview?.totalWorkouts || 0}
+          helper="All workout records"
+          icon={Dumbbell}
+        />
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">Total Meals</p>
-            <Flame className="text-orange-400" size={22} />
-          </div>
-          <h2 className="mt-2 text-3xl font-bold">
-            {overview?.totalMeals || 0}
-          </h2>
-        </div>
+        <StatCard
+          title="Total Meals"
+          value={overview?.totalMeals || 0}
+          helper="All meal records"
+          icon={Utensils}
+        />
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">Habit Average</p>
-            <Target className="text-orange-400" size={22} />
-          </div>
-          <h2 className="mt-2 text-3xl font-bold">
-            {overview?.habitStats?.averageCompletion || 0}%
-          </h2>
-        </div>
+        <StatCard
+          title="Habit Average"
+          value={overview?.habitStats?.averageCompletion || 0}
+          suffix="%"
+          helper={`${overview?.habitStats?.totalDaysTracked || 0} days tracked`}
+          icon={Target}
+        />
 
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">Total Weight Change</p>
-            <TrendingDown className="text-orange-400" size={22} />
-          </div>
-          <h2 className="mt-2 text-3xl font-bold">
-            {overview?.totalWeightChange || 0}
-            <span className="text-base text-slate-400"> kg</span>
-          </h2>
-        </div>
+        <StatCard
+          title="Weight Change"
+          value={formatNumber(overview?.totalWeightChange, 1)}
+          suffix="kg"
+          helper="Overall body weight change"
+          icon={TrendingDown}
+        />
       </div>
 
-      <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      {/* Filters */}
+      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10">
+        <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="text-xl font-semibold">Report Filters</h2>
-            <p className="text-sm text-slate-400">
-              Choose weekly or monthly report period.
+            <h2 className="text-xl font-semibold tracking-tight">
+              Report filters
+            </h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Choose a weekly or monthly period and load the report.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <button
+              type="button"
               onClick={() => setActiveTab("weekly")}
-              className={`rounded-xl px-4 py-2 font-semibold ${
+              className={`rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
                 activeTab === "weekly"
-                  ? "bg-orange-500 text-white"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  ? "bg-gradient-to-r from-[#009587] to-[#00809d] text-white shadow-lg shadow-[#009587]/20"
+                  : "border border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]"
               }`}
             >
               Weekly
             </button>
 
             <button
+              type="button"
               onClick={() => setActiveTab("monthly")}
-              className={`rounded-xl px-4 py-2 font-semibold ${
+              className={`rounded-2xl px-4 py-2.5 text-sm font-semibold transition ${
                 activeTab === "monthly"
-                  ? "bg-orange-500 text-white"
-                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  ? "bg-gradient-to-r from-[#009587] to-[#00809d] text-white shadow-lg shadow-[#009587]/20"
+                  : "border border-white/10 bg-white/[0.05] text-slate-300 hover:bg-white/[0.08]"
               }`}
             >
               Monthly
@@ -216,34 +438,37 @@ const Reports = () => {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl bg-slate-950 border border-slate-800 p-4">
-            <label className="block text-sm text-slate-300 mb-2">
-              Weekly Start Date
-            </label>
+        <div className="grid gap-4 xl:grid-cols-2">
+          <div className="rounded-3xl border border-white/10 bg-[#061316]/50 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <CalendarDays size={18} className="text-[#00c2ad]" />
+              <h3 className="font-semibold">Weekly report</h3>
+            </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
               <input
                 type="date"
                 value={weekStartDate}
                 onChange={(e) => setWeekStartDate(e.target.value)}
-                className="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-orange-500"
+                className="w-full rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-white outline-none focus:border-[#009587] focus:ring-4 focus:ring-[#009587]/10"
               />
 
               <button
+                type="button"
                 onClick={fetchWeeklyReport}
                 disabled={reportLoading}
-                className="rounded-xl bg-orange-500 px-5 py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+                className="rounded-2xl bg-gradient-to-r from-[#009587] to-[#00809d] px-5 py-3 font-semibold text-white shadow-lg shadow-[#009587]/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
               >
                 Load Week
               </button>
             </div>
           </div>
 
-          <div className="rounded-xl bg-slate-950 border border-slate-800 p-4">
-            <label className="block text-sm text-slate-300 mb-2">
-              Monthly Report
-            </label>
+          <div className="rounded-3xl border border-white/10 bg-[#061316]/50 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <BarChart3 size={18} className="text-[#00c2ad]" />
+              <h3 className="font-semibold">Monthly report</h3>
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
               <input
@@ -255,7 +480,7 @@ const Reports = () => {
                     year: e.target.value,
                   }))
                 }
-                className="rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-orange-500"
+                className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-white outline-none focus:border-[#009587] focus:ring-4 focus:ring-[#009587]/10"
                 placeholder="2026"
               />
 
@@ -267,26 +492,20 @@ const Reports = () => {
                     month: e.target.value,
                   }))
                 }
-                className="rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-orange-500"
+                className="rounded-2xl border border-white/10 bg-[#0b2025] px-4 py-3 text-white outline-none focus:border-[#009587] focus:ring-4 focus:ring-[#009587]/10"
               >
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
+                {monthNames.map((month) => (
+                  <option key={month.value} value={month.value}>
+                    {month.label}
+                  </option>
+                ))}
               </select>
 
               <button
+                type="button"
                 onClick={fetchMonthlyReport}
                 disabled={reportLoading}
-                className="rounded-xl bg-orange-500 px-5 py-3 font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+                className="rounded-2xl bg-gradient-to-r from-[#009587] to-[#00809d] px-5 py-3 font-semibold text-white shadow-lg shadow-[#009587]/20 transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
               >
                 Load Month
               </button>
@@ -295,184 +514,287 @@ const Reports = () => {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-        <div className="mb-5 flex items-center gap-3">
-          <div className="h-11 w-11 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center">
-            {activeTab === "weekly" ? (
-              <CalendarDays size={22} />
-            ) : (
-              <BarChart3 size={22} />
-            )}
+      {/* Selected report */}
+      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10">
+        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#009587]/20 to-[#00809d]/20 text-[#9ff7ec] ring-1 ring-white/10">
+              {activeTab === "weekly" ? (
+                <CalendarDays size={23} />
+              ) : (
+                <BarChart3 size={23} />
+              )}
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold capitalize tracking-tight">
+                {activeTab} report
+              </h2>
+              <p className="text-sm text-slate-400">{reportPeriod}</p>
+            </div>
           </div>
 
-          <div>
-            <h2 className="text-xl font-semibold capitalize">
-              {activeTab} Report
-            </h2>
-            <p className="text-sm text-slate-400">
-              {selectedReport?.period?.startDate
-                ? `${new Date(
-                    selectedReport.period.startDate
-                  ).toLocaleDateString()} - ${new Date(
-                    selectedReport.period.endDate
-                  ).toLocaleDateString()}`
-                : "No period data"}
-            </p>
-          </div>
+          <span className="rounded-2xl border border-[#009587]/25 bg-[#009587]/10 px-4 py-2 text-sm font-semibold text-[#9ff7ec] capitalize">
+            {activeTab}
+          </span>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl bg-slate-800 p-4">
-            <p className="text-sm text-slate-400">Calories Consumed</p>
-            <h3 className="mt-1 text-2xl font-bold">
-              {summary.totalCaloriesConsumed || 0}
-              <span className="text-sm text-slate-400"> kcal</span>
-            </h3>
-          </div>
+          <MiniMetric
+            label="Calories Consumed"
+            value={summary.totalCaloriesConsumed || 0}
+            suffix="kcal"
+            icon={Flame}
+          />
 
-          <div className="rounded-xl bg-slate-800 p-4">
-            <p className="text-sm text-slate-400">Protein</p>
-            <h3 className="mt-1 text-2xl font-bold">
-              {summary.totalProtein || 0}
-              <span className="text-sm text-slate-400"> g</span>
-            </h3>
-          </div>
+          <MiniMetric
+            label="Protein"
+            value={summary.totalProtein || 0}
+            suffix="g"
+            icon={Target}
+          />
 
-          <div className="rounded-xl bg-slate-800 p-4">
-            <p className="text-sm text-slate-400">Calories Burned</p>
-            <h3 className="mt-1 text-2xl font-bold">
-              {summary.totalCaloriesBurned || 0}
-              <span className="text-sm text-slate-400"> kcal</span>
-            </h3>
-          </div>
+          <MiniMetric
+            label="Calories Burned"
+            value={summary.totalCaloriesBurned || 0}
+            suffix="kcal"
+            icon={Activity}
+          />
 
-          <div className="rounded-xl bg-slate-800 p-4">
-            <p className="text-sm text-slate-400">Calorie Balance</p>
-            <h3 className="mt-1 text-2xl font-bold">
-              {summary.calorieBalance || 0}
-              <span className="text-sm text-slate-400"> kcal</span>
-            </h3>
-          </div>
+          <MiniMetric
+            label="Calorie Balance"
+            value={summary.calorieBalance || 0}
+            suffix="kcal"
+            icon={BarChart3}
+          />
 
-          <div className="rounded-xl bg-slate-800 p-4">
-            <p className="text-sm text-slate-400">Total Workouts</p>
-            <h3 className="mt-1 text-2xl font-bold">
-              {summary.totalWorkouts || 0}
-            </h3>
-          </div>
+          <MiniMetric
+            label="Total Workouts"
+            value={summary.totalWorkouts || 0}
+            icon={Dumbbell}
+          />
 
-          <div className="rounded-xl bg-slate-800 p-4">
-            <p className="text-sm text-slate-400">Workout Duration</p>
-            <h3 className="mt-1 text-2xl font-bold">
-              {summary.totalWorkoutDuration || 0}
-              <span className="text-sm text-slate-400"> min</span>
-            </h3>
-          </div>
+          <MiniMetric
+            label="Workout Duration"
+            value={summary.totalWorkoutDuration || 0}
+            suffix="min"
+            icon={CalendarDays}
+          />
 
-          <div className="rounded-xl bg-slate-800 p-4">
-            <p className="text-sm text-slate-400">Habit Average</p>
-            <h3 className="mt-1 text-2xl font-bold">
-              {summary.habitAverageCompletion || 0}%
-            </h3>
-          </div>
+          <MiniMetric
+            label="Habit Average"
+            value={summary.habitAverageCompletion || 0}
+            suffix="%"
+            icon={Target}
+          />
 
-          <div className="rounded-xl bg-slate-800 p-4">
-            <p className="text-sm text-slate-400">Weight Change</p>
-            <h3 className="mt-1 text-2xl font-bold">
-              {summary.weightChange || 0}
-              <span className="text-sm text-slate-400"> kg</span>
-            </h3>
+          <MiniMetric
+            label="Weight Change"
+            value={formatNumber(summary.weightChange, 1)}
+            suffix="kg"
+            icon={Scale}
+          />
+        </div>
+      </div>
+
+      {/* Charts */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <ChartCard
+          title="Calories vs Burned"
+          subtitle="Daily calorie intake and exercise burn."
+          icon={Flame}
+          empty={chartRows.length === 0}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartRows}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f3438" />
+              <XAxis dataKey="date" stroke="#94a3b8" />
+              <YAxis stroke="#94a3b8" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#07191d",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "16px",
+                  color: "#fff",
+                }}
+              />
+              <Bar
+                dataKey="calories"
+                name="Calories Consumed"
+                fill="#009587"
+                radius={[10, 10, 0, 0]}
+              />
+              <Bar
+                dataKey="burned"
+                name="Calories Burned"
+                fill="#00809d"
+                radius={[10, 10, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartCard>
+
+        <ChartCard
+          title="Protein & Habit Trend"
+          subtitle="Protein intake and habit completion across days."
+          icon={Target}
+          empty={chartRows.length === 0}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartRows}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f3438" />
+              <XAxis dataKey="date" stroke="#94a3b8" />
+              <YAxis stroke="#94a3b8" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#07191d",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "16px",
+                  color: "#fff",
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="protein"
+                name="Protein"
+                stroke="#00c2ad"
+                strokeWidth={3}
+                dot={{ r: 4, fill: "#00c2ad" }}
+              />
+              <Line
+                type="monotone"
+                dataKey="habit"
+                name="Habit Completion %"
+                stroke="#009587"
+                strokeWidth={3}
+                dot={{ r: 4, fill: "#009587" }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      </div>
+
+      {/* Detail panels */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Nutrition details
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Macro totals for the selected period.
+          </p>
+
+          <div className="mt-5 space-y-3">
+            {[
+              ["Calories", summary.totalCaloriesConsumed || 0, "kcal"],
+              ["Protein", summary.totalProtein || 0, "g"],
+              ["Carbs", summary.totalCarbs || 0, "g"],
+              ["Fats", summary.totalFats || 0, "g"],
+            ].map(([label, value, suffix]) => (
+              <div
+                key={label}
+                className="flex items-center justify-between rounded-2xl bg-white/[0.04] p-4"
+              >
+                <span className="text-sm text-slate-400">{label}</span>
+                <span className="font-bold">
+                  {value}
+                  <span className="text-sm text-slate-400"> {suffix}</span>
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
-            <h3 className="font-semibold mb-3">Nutrition Details</h3>
+        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10">
+          <h2 className="text-xl font-semibold tracking-tight">
+            Body progress details
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Measurement changes for the selected period.
+          </p>
 
-            <div className="space-y-2 text-sm text-slate-300">
-              <div className="flex justify-between">
-                <span>Carbs</span>
-                <span>{summary.totalCarbs || 0} g</span>
+          <div className="mt-5 space-y-3">
+            {[
+              ["Weight Change", summary.weightChange || 0, "kg"],
+              ["Waist Change", summary.waistChange || 0, "cm"],
+              ["Body Fat Change", summary.bodyFatChange || 0, "%"],
+            ].map(([label, value, suffix]) => (
+              <div
+                key={label}
+                className="flex items-center justify-between rounded-2xl bg-white/[0.04] p-4"
+              >
+                <span className="text-sm text-slate-400">{label}</span>
+                <span className="font-bold">
+                  {formatNumber(value, 1)}
+                  <span className="text-sm text-slate-400"> {suffix}</span>
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span>Fats</span>
-                <span>{summary.totalFats || 0} g</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Protein</span>
-                <span>{summary.totalProtein || 0} g</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
-            <h3 className="font-semibold mb-3">Body Progress Details</h3>
-
-            <div className="space-y-2 text-sm text-slate-300">
-              <div className="flex justify-between">
-                <span>Weight Change</span>
-                <span>{summary.weightChange || 0} kg</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Waist Change</span>
-                <span>{summary.waistChange || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Body Fat Change</span>
-                <span>{summary.bodyFatChange || 0}%</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
+      </div>
 
-        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-950 p-4">
-          <h3 className="font-semibold mb-4">Daily Breakdown</h3>
+      {/* Daily Breakdown */}
+      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-xl shadow-black/10">
+        <h2 className="text-xl font-semibold tracking-tight">
+          Daily breakdown
+        </h2>
+        <p className="mt-1 text-sm text-slate-400">
+          Day-by-day summary for the selected report period.
+        </p>
 
-          {selectedReport?.charts?.dailyBreakdown?.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400">
-                    <th className="py-3 pr-4">Date</th>
-                    <th className="py-3 pr-4">Calories</th>
-                    <th className="py-3 pr-4">Protein</th>
-                    <th className="py-3 pr-4">Burned</th>
-                    <th className="py-3 pr-4">Workout</th>
-                    <th className="py-3 pr-4">Habit</th>
+        {dailyBreakdown.length === 0 ? (
+          <div className="mt-5 rounded-3xl border border-dashed border-white/10 bg-white/[0.03] p-8 text-center text-slate-400">
+            No daily breakdown available.
+          </div>
+        ) : (
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-slate-400">
+                  <th className="py-3 pr-4">Date</th>
+                  <th className="py-3 pr-4">Calories</th>
+                  <th className="py-3 pr-4">Protein</th>
+                  <th className="py-3 pr-4">Burned</th>
+                  <th className="py-3 pr-4">Workouts</th>
+                  <th className="py-3 pr-4">Habit</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {dailyBreakdown.map((day) => (
+                  <tr
+                    key={day.date}
+                    className="border-b border-white/5 text-slate-300"
+                  >
+                    <td className="py-3 pr-4">{formatDate(day.date)}</td>
+                    <td className="py-3 pr-4">
+                      {day.nutrition?.calories || day.calories || 0} kcal
+                    </td>
+                    <td className="py-3 pr-4">
+                      {day.nutrition?.protein || day.protein || 0}g
+                    </td>
+                    <td className="py-3 pr-4">
+                      {day.workout?.caloriesBurned ||
+                        day.caloriesBurned ||
+                        0}{" "}
+                      kcal
+                    </td>
+                    <td className="py-3 pr-4">
+                      {day.workout?.workoutCount || day.workoutCount || 0}
+                    </td>
+                    <td className="py-3 pr-4">
+                      {day.habitCompletion ||
+                        day.habit?.completionPercentage ||
+                        0}
+                      %
+                    </td>
                   </tr>
-                </thead>
-
-                <tbody>
-                  {selectedReport.charts.dailyBreakdown.map((day) => (
-                    <tr
-                      key={day.date}
-                      className="border-b border-slate-900 text-slate-300"
-                    >
-                      <td className="py-3 pr-4">{day.date}</td>
-                      <td className="py-3 pr-4">
-                        {day.nutrition?.calories || 0}
-                      </td>
-                      <td className="py-3 pr-4">
-                        {day.nutrition?.protein || 0}g
-                      </td>
-                      <td className="py-3 pr-4">
-                        {day.workout?.caloriesBurned || 0}
-                      </td>
-                      <td className="py-3 pr-4">
-                        {day.workout?.workoutCount || 0}
-                      </td>
-                      <td className="py-3 pr-4">
-                        {day.habitCompletion || 0}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-slate-400">No daily breakdown available.</p>
-          )}
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
