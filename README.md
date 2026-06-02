@@ -23,22 +23,19 @@ https://fitnessbuddyproserver.vercel.app
 ## Screenshots
 
 ### Dashboard
-<img width="1290" height="6273" alt="dashboard_fbp" src="https://github.com/user-attachments/assets/56329f81-c84e-48f0-b932-07cfb1204069" />
+<img width="513" height="5516" alt="dashboard" src="https://github.com/user-attachments/assets/2b2fd1c6-70ca-4538-9dc1-672d093eea81" />
 
 ### Workout Tracker
-<img width="1290" height="5970" alt="fbp_workout" src="https://github.com/user-attachments/assets/9d65dde3-6cd2-4660-bd74-7af224811d24" />
+<img width="485" height="4763" alt="workout" src="https://github.com/user-attachments/assets/e081f035-5597-42d8-b18b-c19f4d3a8f62" />
 
-### Meal & Diet Tracker
-<img width="1290" height="7524" alt="mealTracker_fbp" src="https://github.com/user-attachments/assets/8032c7b5-4ecf-452d-bb68-de7707b99d44" />
-
-### Body Prograss Tracker
-<img width="1290" height="7473" alt="bodyProgressTracker_fbp" src="https://github.com/user-attachments/assets/d80f29a3-535b-40bc-897f-cf320ccb3cf3" />
+### Plan
+<img width="485" height="1799" alt="plans" src="https://github.com/user-attachments/assets/ad973967-c6b9-4183-84f9-822d3c69e950" />
 
 ### Reports
-<img width="1290" height="9948" alt="reportsTracker_fbp" src="https://github.com/user-attachments/assets/a6878445-0c15-46ea-8d96-c18a7303438c" />
+<img width="485" height="4901" alt="reports" src="https://github.com/user-attachments/assets/16b4335b-2b48-4107-85c9-1d338a4fcbf3" />
 
 ### PWA Install
-<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/29a53935-71f4-41f7-b2fa-8dc61d29ffdb" />
+<img width="720" height="1600" alt="image" src="https://github.com/user-attachments/assets/19d48f8e-f973-47ab-804f-848ea0935bd4" />
 
 
 ---
