@@ -637,20 +637,18 @@ const estimateCalories = ({ metValue, bodyWeightKg, duration }) => {
 /**
  * Normalize date.
  */
-workoutSchema.pre("validate", function (next) {
+workoutSchema.pre("validate", function () {
   if (this.date) {
     const normalizedDate = new Date(this.date);
     normalizedDate.setHours(0, 0, 0, 0);
     this.date = normalizedDate;
   }
-
-  next();
 });
 
 /**
  * Auto-calculate workout totals, volume, completion, RPE, pain, and suggestions.
  */
-workoutSchema.pre("save", function (next) {
+workoutSchema.pre("save", function () {
   let totalSets = 0;
   let totalReps = 0;
   let totalVolume = 0;
@@ -861,7 +859,6 @@ workoutSchema.pre("save", function (next) {
       "Repeat this workout with manageable load next time.";
   }
 
-  next();
 });
 
 workoutSchema.methods.getWorkoutSummary = function () {

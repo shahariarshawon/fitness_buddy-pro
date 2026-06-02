@@ -378,14 +378,12 @@ const round = (value) => Math.round((Number(value) || 0) * 10) / 10;
 /**
  * Normalize date to start of day.
  */
-mealSchema.pre("validate", function (next) {
+mealSchema.pre("validate", function () {
   if (this.date) {
     const normalizedDate = new Date(this.date);
     normalizedDate.setHours(0, 0, 0, 0);
     this.date = normalizedDate;
   }
-
-  next();
 });
 
 /**
@@ -393,7 +391,7 @@ mealSchema.pre("validate", function (next) {
  * This allows:
  * rice 1.5 cup -> gramAmount -> calculated calories/protein/carbs/fats
  */
-foodItemSchema.pre("validate", function (next) {
+foodItemSchema.pre("validate", function () {
   if (
     this.gramAmount > 0 &&
     this.nutritionPer100g &&
@@ -414,14 +412,12 @@ foodItemSchema.pre("validate", function (next) {
   if (!this.quantity && this.quantityValue && this.unit) {
     this.quantity = `${this.quantityValue} ${this.unit}`;
   }
-
-  next();
 });
 
 /**
  * Auto-calculate meal totals.
  */
-mealSchema.pre("save", function (next) {
+mealSchema.pre("save", function () {
   const foods = this.foods || [];
 
   this.totalCalories = round(
@@ -465,8 +461,6 @@ mealSchema.pre("save", function (next) {
   if (this.proteinTarget > 0) {
     this.isProteinTargetAchieved = this.totalProtein >= this.proteinTarget;
   }
-
-  next();
 });
 
 /**

@@ -302,20 +302,26 @@ const progressPhotoSchema = new mongoose.Schema(
  * Normalize date to start of day.
  * This makes weekly photo grouping cleaner.
  */
-progressPhotoSchema.pre("validate", function (next) {
+progressPhotoSchema.pre("validate", function () {
   if (this.date) {
     const normalizedDate = new Date(this.date);
     normalizedDate.setHours(0, 0, 0, 0);
     this.date = normalizedDate;
   }
-
-  next();
 });
 
 /**
  * Sync old weight field with bodySnapshot.
  */
-progressPhotoSchema.pre("save", function (next) {
+progressPhotoSchema.pre("save", function () {
+  if (!this.bodySnapshot) {
+    this.bodySnapshot = {};
+  }
+
+  if (!this.original) {
+    this.original = {};
+  }
+
   if (this.weight !== null && this.weight !== undefined) {
     this.bodySnapshot.weight = this.weight;
     this.bodySnapshot.weightUnit = this.weightUnit;
@@ -340,8 +346,6 @@ progressPhotoSchema.pre("save", function (next) {
   if (this.isWeeklyCheckInPhoto) {
     this.checkInType = "weekly";
   }
-
-  next();
 });
 
 /**

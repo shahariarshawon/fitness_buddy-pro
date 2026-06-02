@@ -404,7 +404,7 @@ const reminderSchema = new mongoose.Schema(
 /**
  * Auto-set weekly days based on frequency.
  */
-reminderSchema.pre("validate", function (next) {
+reminderSchema.pre("validate", function () {
   if (this.frequency === "weekdays") {
     this.daysOfWeek = ["monday", "tuesday", "wednesday", "thursday", "friday"];
   }
@@ -417,13 +417,28 @@ reminderSchema.pre("validate", function (next) {
     this.maxTriggers = this.maxTriggers || 1;
   }
 
-  next();
+  if (Array.isArray(this.daysOfWeek)) {
+    this.daysOfWeek = this.daysOfWeek
+      .filter(Boolean)
+      .map((day) => String(day).toLowerCase().trim())
+      .filter((day) => DAY_NAMES.includes(day));
+  }
+
+  if (Array.isArray(this.tags)) {
+    this.tags = this.tags
+      .filter(Boolean)
+      .map((tag) => String(tag).toLowerCase().trim());
+  }
+
+  if (this.timezone) {
+    this.timezone = String(this.timezone).trim();
+  }
 });
 
 /**
  * Keep completion fields synced.
  */
-reminderSchema.pre("save", function (next) {
+reminderSchema.pre("save", function () {
   if (this.isCompleted && !this.completedAt) {
     this.completedAt = new Date();
     this.lastStatus = "completed";
@@ -432,8 +447,6 @@ reminderSchema.pre("save", function (next) {
   if (!this.isCompleted) {
     this.completedAt = null;
   }
-
-  next();
 });
 
 /**

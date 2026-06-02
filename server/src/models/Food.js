@@ -225,7 +225,20 @@ const foodSchema = new mongoose.Schema(
  * Make sure every food has gram unit.
  * This helps the meal calculator work safely.
  */
-foodSchema.pre("save", function (next) {
+foodSchema.pre("validate", function () {
+  if (!Array.isArray(this.servingUnits)) {
+    this.servingUnits = [];
+  }
+
+  this.servingUnits = this.servingUnits
+    .filter((item) => item && item.unit && item.gramEquivalent !== undefined)
+    .map((item) => ({
+      unit: String(item.unit || "").toLowerCase().trim(),
+      gramEquivalent: Number(item.gramEquivalent || 0),
+      label: item.label ? String(item.label).trim() : "",
+      isDefault: Boolean(item.isDefault),
+    }));
+
   const hasGramUnit = this.servingUnits.some((item) => item.unit === "g");
 
   if (!hasGramUnit) {
@@ -241,7 +254,40 @@ foodSchema.pre("save", function (next) {
     this.defaultServingUnit = "g";
   }
 
-  next();
+  this.defaultServingUnit = String(this.defaultServingUnit)
+    .toLowerCase()
+    .trim();
+
+  this.defaultServingQuantity = Number(this.defaultServingQuantity || 100);
+
+  this.caloriesPer100g = Number(this.caloriesPer100g || 0);
+  this.proteinPer100g = Number(this.proteinPer100g || 0);
+  this.carbsPer100g = Number(this.carbsPer100g || 0);
+  this.fatsPer100g = Number(this.fatsPer100g || 0);
+  this.fiberPer100g = Number(this.fiberPer100g || 0);
+  this.sugarPer100g = Number(this.sugarPer100g || 0);
+  this.sodiumPer100g = Number(this.sodiumPer100g || 0);
+  this.cholesterolPer100g = Number(this.cholesterolPer100g || 0);
+
+  if (this.name) {
+    this.name = this.name.trim();
+  }
+
+  if (this.localName) {
+    this.localName = this.localName.trim();
+  }
+
+  if (Array.isArray(this.aliases)) {
+    this.aliases = this.aliases
+      .filter(Boolean)
+      .map((item) => String(item).toLowerCase().trim());
+  }
+
+  if (Array.isArray(this.tags)) {
+    this.tags = this.tags
+      .filter(Boolean)
+      .map((item) => String(item).toLowerCase().trim());
+  }
 });
 
 /**

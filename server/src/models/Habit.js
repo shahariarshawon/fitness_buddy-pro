@@ -342,6 +342,10 @@ const habitSchema = new mongoose.Schema(
         type: Boolean,
         default: false,
       },
+      success: {
+        type: Boolean,
+        default: false,
+      },
     },
 
     mood: {
@@ -400,20 +404,18 @@ const habitSchema = new mongoose.Schema(
  * Normalize date to start of day.
  * This makes one habit record per user per day work correctly.
  */
-habitSchema.pre("validate", function (next) {
+habitSchema.pre("validate", function () {
   if (this.date) {
     const normalizedDate = new Date(this.date);
     normalizedDate.setHours(0, 0, 0, 0);
     this.date = normalizedDate;
   }
-
-  next();
 });
 
 /**
  * Auto-calculate completed booleans from numeric values.
  */
-habitSchema.pre("save", function (next) {
+habitSchema.pre("save", function () {
   this.waterCompleted =
     Number(this.waterIntakeLiters || 0) >= Number(this.waterTargetLiters || 0);
 
@@ -434,13 +436,18 @@ habitSchema.pre("save", function (next) {
     Number(this.personalDevelopmentTargetMinutes || 0);
 
   const prayers = this.prayers || {};
+
   this.prayerCompleted = Boolean(
     prayers.fajr &&
-      prayers.dhuhr &&
-      prayers.asr &&
-      prayers.maghrib &&
-      prayers.isha
+    prayers.dhuhr &&
+    prayers.asr &&
+    prayers.maghrib &&
+    prayers.isha
   );
+
+  if (!this.dailyThreeTasks) {
+    this.dailyThreeTasks = {};
+  }
 
   this.dailyThreeTasks.workoutOrWalkDone = Boolean(
     this.workoutCompleted || this.cardioCompleted || this.mobilityCompleted
@@ -452,6 +459,12 @@ habitSchema.pre("save", function (next) {
 
   this.dailyThreeTasks.careerActionDone = Boolean(
     this.studyCompleted || this.personalDevelopmentCompleted
+  );
+
+  this.dailyThreeTasks.success = Boolean(
+    this.dailyThreeTasks.workoutOrWalkDone &&
+    this.dailyThreeTasks.nutritionTracked &&
+    this.dailyThreeTasks.careerActionDone
   );
 
   const fixedTasks = [
@@ -467,9 +480,11 @@ habitSchema.pre("save", function (next) {
     this.personalDevelopmentCompleted,
     this.noLateNightScrolling,
     this.sleepShutdownCompleted,
+    this.mobilityCompleted,
+    this.weeklyCheckInCompleted,
   ];
 
-  const customTasks = this.tasks || [];
+  const customTasks = Array.isArray(this.tasks) ? this.tasks : [];
 
   const allTaskStatuses = [
     ...fixedTasks,
@@ -481,20 +496,17 @@ habitSchema.pre("save", function (next) {
 
   this.completionPercentage = Math.round((completedTasks / totalTasks) * 100);
 
-  const requiredCustomTasks = customTasks.filter((task) => task.isRequired);
-  const completedRequiredCustomTasks = requiredCustomTasks.filter(
-    (task) => task.isCompleted
+  const requiredThreeTasks = [
+    this.dailyThreeTasks.workoutOrWalkDone,
+    this.dailyThreeTasks.nutritionTracked,
+    this.dailyThreeTasks.careerActionDone,
+  ];
+
+  const completedRequiredThreeTasks = requiredThreeTasks.filter(Boolean).length;
+
+  this.requiredTaskCompletionPercentage = Math.round(
+    (completedRequiredThreeTasks / requiredThreeTasks.length) * 100
   );
-
-  if (requiredCustomTasks.length > 0) {
-    this.requiredTaskCompletionPercentage = Math.round(
-      (completedRequiredCustomTasks.length / requiredCustomTasks.length) * 100
-    );
-  } else {
-    this.requiredTaskCompletionPercentage = this.completionPercentage;
-  }
-
-  next();
 });
 
 /**
@@ -517,8 +529,8 @@ habitSchema.methods.markTaskComplete = function (taskKey) {
 habitSchema.methods.isDailyThreeTaskSuccess = function () {
   return Boolean(
     this.dailyThreeTasks.workoutOrWalkDone &&
-      this.dailyThreeTasks.nutritionTracked &&
-      this.dailyThreeTasks.careerActionDone
+    this.dailyThreeTasks.nutritionTracked &&
+    this.dailyThreeTasks.careerActionDone
   );
 };
 

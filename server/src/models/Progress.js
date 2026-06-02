@@ -340,23 +340,25 @@ const round = (value) => Math.round((Number(value) || 0) * 10) / 10;
  * Normalize progress date.
  * This helps create clean daily/weekly records.
  */
-progressSchema.pre("validate", function (next) {
+progressSchema.pre("validate", function () {
   if (this.date) {
     const normalizedDate = new Date(this.date);
     normalizedDate.setHours(0, 0, 0, 0);
     this.date = normalizedDate;
   }
-
-  next();
 });
 
 /**
  * Auto-calculate BMI when height is available.
  */
-progressSchema.pre("save", function (next) {
+progressSchema.pre("save", function () {
   if (this.heightCm && this.weight) {
     const heightMeter = Number(this.heightCm) / 100;
     this.bmi = round(Number(this.weight) / (heightMeter * heightMeter));
+  }
+
+  if (!this.measurements) {
+    this.measurements = {};
   }
 
   /**
@@ -417,8 +419,6 @@ progressSchema.pre("save", function (next) {
       unit: this.measurementUnit,
     };
   }
-
-  next();
 });
 
 /**
