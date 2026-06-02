@@ -195,11 +195,19 @@ const syncHabitWithDailyData = async (habit, userId, start, end) => {
       Number(workout.completionPercentage || 0) >= 70
   );
 
-  const cardioCompleted = workouts.some(
-    (workout) =>
+  const cardioCompleted = workouts.some((workout) => {
+    const exerciseCardioDuration = (workout.exercises || []).reduce(
+      (sum, exercise) => sum + Number(exercise.duration || 0),
+      0
+    );
+
+    return (
+      workout.workoutType === "cardio" ||
       Number(workout.cardioDuration || 0) > 0 ||
-      Number(workout.cardio?.duration || 0) > 0
-  );
+      Number(workout.cardio?.duration || 0) > 0 ||
+      exerciseCardioDuration > 0
+    );
+  });
 
   habit.caloriesIntake = round(nutrition.calories);
   habit.proteinIntakeGrams = round(nutrition.protein);
@@ -214,6 +222,158 @@ const syncHabitWithDailyData = async (habit, userId, start, end) => {
   }
 
   return habit;
+};
+
+const habitCompletionFields = [
+  "workoutCompleted",
+  "cardioCompleted",
+  "dietFollowed",
+  "waterCompleted",
+  "sleepAchieved",
+  "prayerCompleted",
+  "studyCompleted",
+  "proteinTargetAchieved",
+  "stepsCompleted",
+  "personalDevelopmentCompleted",
+  "noLateNightScrolling",
+  "sleepShutdownCompleted",
+  "mobilityCompleted",
+  "weeklyCheckInCompleted",
+];
+
+const calculateHabitCompletion = (habitData = {}) => {
+  const completed = habitCompletionFields.filter((field) =>
+    Boolean(habitData[field])
+  ).length;
+
+  return Math.round((completed / habitCompletionFields.length) * 100);
+};
+
+const buildSyncedHabitData = async (habit, userId, start, end) => {
+  const [meals, workouts] = await Promise.all([
+    Meal.find({
+      user: userId,
+      date: {
+        $gte: start,
+        $lte: end,
+      },
+    }),
+
+    Workout.find({
+      user: userId,
+      date: {
+        $gte: start,
+        $lte: end,
+      },
+    }),
+  ]);
+
+  const nutrition = meals.reduce(
+    (total, meal) => {
+      total.calories += Number(meal.totalCalories || 0);
+      total.protein += Number(meal.totalProtein || 0);
+      total.carbs += Number(meal.totalCarbs || 0);
+      total.fats += Number(meal.totalFats || 0);
+      return total;
+    },
+    {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+    }
+  );
+
+  const cardioDurationFromExercises = workouts.reduce((total, workout) => {
+    const exerciseCardioDuration = (workout.exercises || []).reduce(
+      (sum, exercise) => sum + Number(exercise.duration || 0),
+      0
+    );
+
+    return total + exerciseCardioDuration;
+  }, 0);
+
+  const hasWorkout = workouts.some((workout) =>
+    ["strength", "mixed", "bodyweight", "other"].includes(workout.workoutType)
+  );
+
+  const hasCardio =
+    cardioDurationFromExercises > 0 ||
+    workouts.some(
+      (workout) =>
+        workout.workoutType === "cardio" ||
+        Number(workout.cardioDuration || 0) > 0
+    );
+
+  const baseHabit = habit ? habit.toObject ? habit.toObject() : habit : {};
+
+  const syncedData = {
+    caloriesIntake: round(nutrition.calories),
+    proteinIntakeGrams: round(nutrition.protein),
+
+    dietFollowed: baseHabit.dietFollowed || meals.length > 0,
+    workoutCompleted: baseHabit.workoutCompleted || hasWorkout,
+    cardioCompleted: baseHabit.cardioCompleted || hasCardio,
+
+    proteinTargetAchieved:
+      baseHabit.proteinTargetAchieved ||
+      Number(nutrition.protein || 0) >=
+      Number(baseHabit.proteinTargetGrams || 0),
+
+    waterCompleted:
+      Number(baseHabit.waterIntakeLiters || 0) >=
+      Number(baseHabit.waterTargetLiters || 0),
+
+    stepsCompleted:
+      Number(baseHabit.stepsCount || 0) >= Number(baseHabit.stepsTarget || 0),
+
+    sleepAchieved:
+      Number(baseHabit.sleepHours || 0) >=
+      Number(baseHabit.sleepTargetHours || 0),
+  };
+
+  const dailyThreeTasks = {
+    workoutOrWalkDone:
+      syncedData.workoutCompleted ||
+      syncedData.cardioCompleted ||
+      Boolean(baseHabit.mobilityCompleted),
+
+    nutritionTracked:
+      syncedData.dietFollowed ||
+      syncedData.proteinTargetAchieved ||
+      meals.length > 0,
+
+    careerActionDone:
+      Boolean(baseHabit.studyCompleted) ||
+      Boolean(baseHabit.personalDevelopmentCompleted),
+  };
+
+  dailyThreeTasks.success =
+    dailyThreeTasks.workoutOrWalkDone &&
+    dailyThreeTasks.nutritionTracked &&
+    dailyThreeTasks.careerActionDone;
+
+  const finalData = {
+    ...syncedData,
+    dailyThreeTasks,
+  };
+
+  finalData.completionPercentage = calculateHabitCompletion({
+    ...baseHabit,
+    ...finalData,
+  });
+
+  finalData.requiredTaskCompletionPercentage = Math.round(
+    ([
+      dailyThreeTasks.workoutOrWalkDone,
+      dailyThreeTasks.nutritionTracked,
+      dailyThreeTasks.careerActionDone,
+    ].filter(Boolean).length /
+      3) *
+    100
+  );
+
+  return finalData;
 };
 
 // @desc    Create or update habit for a date
@@ -346,25 +506,56 @@ const getTodayHabit = async (req, res, next) => {
       throw new Error("User not found");
     }
 
-    const { habit: existingHabit, start, end } = await findHabitByDate(
-      req.user._id,
-      new Date()
-    );
+    const { start, end } = getStartAndEndOfDate(new Date());
 
-    let habit = existingHabit;
+    let habit = await Habit.findOne({
+      user: req.user._id,
+      date: {
+        $gte: start,
+        $lte: end,
+      },
+    });
 
-    if (!habit && createIfMissing) {
-      habit = new Habit({
-        user: req.user._id,
-        date: start,
-        ...applyDefaultTargets({}, user),
+    if (!habit && !createIfMissing) {
+      return res.status(200).json({
+        success: true,
+        habit: null,
       });
     }
 
-    if (habit && autoSync) {
-      habit = await syncHabitWithDailyData(habit, req.user._id, start, end);
-      await habit.save();
+    const defaultData = applyDefaultTargets(
+      {
+        user: req.user._id,
+        date: start,
+      },
+      user
+    );
+
+    let updateData = {};
+
+    if (autoSync) {
+      updateData = await buildSyncedHabitData(habit, req.user._id, start, end);
     }
+
+    habit = await Habit.findOneAndUpdate(
+      {
+        user: req.user._id,
+        date: {
+          $gte: start,
+          $lte: end,
+        },
+      },
+      {
+        $setOnInsert: defaultData,
+        $set: updateData,
+      },
+      {
+        new: true,
+        upsert: createIfMissing,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      }
+    );
 
     res.status(200).json({
       success: true,
@@ -408,16 +599,40 @@ const syncTodayHabit = async (req, res, next) => {
       new Date()
     );
 
-    let habit =
-      existingHabit ||
-      new Habit({
+    const defaultData = applyDefaultTargets(
+      {
         user: req.user._id,
         date: start,
-        ...applyDefaultTargets({}, user),
-      });
+      },
+      user
+    );
 
-    habit = await syncHabitWithDailyData(habit, req.user._id, start, end);
-    await habit.save();
+    const syncedData = await buildSyncedHabitData(
+      existingHabit,
+      req.user._id,
+      start,
+      end
+    );
+
+    const habit = await Habit.findOneAndUpdate(
+      {
+        user: req.user._id,
+        date: {
+          $gte: start,
+          $lte: end,
+        },
+      },
+      {
+        $setOnInsert: defaultData,
+        $set: syncedData,
+      },
+      {
+        new: true,
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      }
+    );
 
     res.status(200).json({
       success: true,
@@ -520,8 +735,8 @@ const getHabitSummary = async (req, res, next) => {
       typeof habit.isDailyThreeTaskSuccess === "function"
         ? habit.isDailyThreeTaskSuccess()
         : habit.dailyThreeTasks?.workoutOrWalkDone &&
-          habit.dailyThreeTasks?.nutritionTracked &&
-          habit.dailyThreeTasks?.careerActionDone
+        habit.dailyThreeTasks?.nutritionTracked &&
+        habit.dailyThreeTasks?.careerActionDone
     ).length;
 
     const summary = {
