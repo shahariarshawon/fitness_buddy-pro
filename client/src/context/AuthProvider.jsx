@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }) => {
             JSON.stringify(response.data.user)
           );
         }
-      } catch (error) {
+      } catch {
         if (isMounted) {
           localStorage.removeItem("FitnessBuddyPro_token");
           localStorage.removeItem("FitnessBuddyPro_user");

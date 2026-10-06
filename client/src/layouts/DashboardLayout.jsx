@@ -3,6 +3,7 @@ import {
   Activity,
   BarChart3,
   Bell,
+  Bot,
   CalendarDays,
   Camera,
   CheckCircle,
@@ -13,6 +14,7 @@ import {
   Scale,
   Target,
   User,
+  Users,
   Utensils,
 } from "lucide-react";
 import { useAuth } from "../context/useAuth";
@@ -20,11 +22,15 @@ import { useAuth } from "../context/useAuth";
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: Home },
   { to: "/today", label: "Today", icon: Target },
+  { to: "/exercises", label: "Exercises", icon: Dumbbell },
+  { to: "/ai-assistant", label: "AI Coach", icon: Bot },
+  { to: "/goals", label: "Goals", icon: Target },
   { to: "/plans", label: "Plans", icon: CalendarDays },
   { to: "/workouts", label: "Workouts", icon: Activity },
   { to: "/meals", label: "Meals", icon: Utensils },
   { to: "/habits", label: "Habits", icon: CheckCircle },
   { to: "/progress", label: "Progress", icon: Scale },
+  { to: "/trainer", label: "Trainer Hub", icon: Users },
   { to: "/photos", label: "Photos", icon: Camera },
   { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/reminders", label: "Reminders", icon: Bell },

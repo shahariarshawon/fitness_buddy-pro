@@ -1,5 +1,6 @@
 const User = require("../models/User");
-const generateToken = require("../utils/generateToken");
+const crypto = require("crypto");
+const { generateToken, generateRefreshToken, verifyRefreshToken } = require("../utils/generateToken");
 
 /**
  * Send consistent auth response.
@@ -12,13 +13,18 @@ const sendAuthResponse = (res, statusCode, message, user) => {
           id: user._id,
           name: user.name,
           email: user.email,
+          role: user.role || "user",
           goal: user.goal,
         };
+
+  const token = generateToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
 
   res.status(statusCode).json({
     success: true,
     message,
-    token: generateToken(user._id),
+    token,
+    refreshToken,
     user: userData,
   });
 };
@@ -426,6 +432,110 @@ const deactivateAccount = async (req, res, next) => {
   }
 };
 
+// @desc    Refresh access token
+// @route   POST /api/v1/auth/refresh
+// @access  Public
+const refreshTokenHandler = async (req, res, next) => {
+  try {
+    const incomingToken = req.body.refreshToken || req.cookies?.refreshToken;
+
+    if (!incomingToken) {
+      res.status(401);
+      throw new Error("Refresh token required");
+    }
+
+    const decoded = verifyRefreshToken(incomingToken);
+    const user = await User.findById(decoded.id);
+
+    if (!user || !user.isActive) {
+      res.status(401);
+      throw new Error("Invalid refresh token or inactive account");
+    }
+
+    const newAccessToken = generateToken(user._id);
+    const newRefreshToken = generateRefreshToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: "Token refreshed successfully",
+      token: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    res.status(401);
+    next(error);
+  }
+};
+
+// @desc    Initiate password reset
+// @route   POST /api/v1/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400);
+      throw new Error("Please provide an email address");
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      // Return 200 to prevent user enumeration
+      return res.status(200).json({
+        success: true,
+        message: "If that email is registered, a password reset token has been generated.",
+      });
+    }
+
+    const resetToken = user.createPasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset token generated successfully",
+      resetToken, // Provided in response for testing/demo environments
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Reset password using reset token
+// @route   POST /api/v1/auth/reset-password/:token
+// @access  Public
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      res.status(400);
+      throw new Error("New password must be at least 6 characters long");
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      res.status(400);
+      throw new Error("Reset token is invalid or has expired");
+    }
+
+    user.password = password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    sendAuthResponse(res, 200, "Password reset successful", user);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -435,4 +545,7 @@ module.exports = {
   changePassword,
   getRecommendations,
   deactivateAccount,
+  refreshTokenHandler,
+  forgotPassword,
+  resetPassword,
 };

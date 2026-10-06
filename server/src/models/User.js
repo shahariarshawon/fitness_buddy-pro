@@ -233,8 +233,25 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "trainer", "admin"],
       default: "user",
+    },
+
+    assignedTrainer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    specialties: {
+      type: [String],
+      default: [],
+    },
+
+    bio: {
+      type: String,
+      default: "",
+      maxlength: [500, "Bio cannot exceed 500 characters"],
     },
 
     avatarUrl: {
@@ -707,6 +724,11 @@ userSchema.methods.getProfileSummary = function () {
     activityLevel: this.activityLevel,
     bmr: this.bmr,
     estimatedMaintenanceCalories: this.estimatedMaintenanceCalories,
+    role: this.role || "user",
+    avatarUrl: this.avatarUrl || "",
+    assignedTrainer: this.assignedTrainer || null,
+    specialties: this.specialties || [],
+    bio: this.bio || "",
     dailyTargets: this.dailyTargets,
     weeklyTargets: this.weeklyTargets,
     unitSystem: this.unitSystem,
